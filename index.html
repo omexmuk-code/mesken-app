@@ -261,7 +261,7 @@
       if(k==='class') e.className = attrs[k];
       else if(k==='html') e.innerHTML = attrs[k];
       else if(k.indexOf('on')===0) e.addEventListener(k.slice(2).toLowerCase(), attrs[k]);
-      else e.setAttribute(k, attrs[k]);
+      else if(attrs[k] !== null && attrs[k] !== undefined) e.setAttribute(k, attrs[k]);
     });
     (children||[]).forEach(function(c){ if(c) e.appendChild(typeof c==='string'?document.createTextNode(c):c); });
     return e;
