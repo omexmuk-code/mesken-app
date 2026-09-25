@@ -4,6 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
 <title>Mesken Real Estate</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="theme-color" content="#08111F">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Mesken">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Inter:wght@400;500;600;700&family=Noto+Sans+Ethiopic:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -239,20 +245,77 @@
       noCostsYet:'No cost entries yet. Add the first one above.', noRevenueYet:'No revenue entries yet. Add the first one above.',
       saveError:'Could not save — please check your connection and try again.',
       houseOnly:'House only', houseShop:'House & Shop', shopOnly:'Shop only', twoHouses:'2 Houses only', houseTwoShops:'1 House + 2 Shops', other:'Other',
-      signInTitle:'Sign in', signInSub:'Enter your email — we’ll send you a secure sign-in link.',
-      emailPh:'you@example.com', sendLink:'Send sign-in link', linkSent:'Check your email — click the link to sign in.',
-      signInError:'Could not send link — check the email and try again.'
+      signInTitle:'Sign in', signInSub:'Enter the email and password your admin gave you.',
+      emailPh:'you@example.com', passwordPh:'Password', signInBtn:'Sign In',
+      signInError:'Incorrect email or password.', signOut:'Sign out',
+      noAccessTitle:'No access yet', noAccessSub:'Your account isn\u2019t set up with access to any project yet. Ask your admin to add you.',
+      roleAdmin:'Admin', roleViewer:'Viewer (view only)', viewOnlyNote:'You have view-only access \u2014 changes are made by an admin.',
+      showMoney:'Show amounts', hideMoney:'Hide amounts', permanentNote:'This cannot be undone.'
+    },
+    am: {
+      brand:'Mesken Real Estate', brandline:'መስከን ሪል እስቴት',
+      tagline:'ቀጥታ የክፍያ መከታተያ እና የሳይት ወጪ ማጠቃለያ — የራስዎ ዳታቤዝ',
+      light:'ብሩህ', dark:'ጨለማ',
+      allProjects:'← ሁሉም ፕሮጀክቶች', projects:'ፕሮጀክቶች', newProject:'+ አዲስ ፕሮጀክት', used:'ከ'+MAX_PROJECTS+' ውስጥ ጥቅም ላይ',
+      tabBuyers:'ገዢዎች', tabTracker:'የክፍያ መከታተያ', tabCosts:'ወጪዎች', tabRevenue:'ገቢ',
+      addBuyer:'+ ገዢ ጨምር', addCost:'+ ወጪ ጨምር', addRevenue:'+ ገቢ ጨምር',
+      searchPh:'የገዢ ስም ወይም የንብረት አይነት ይፈልጉ…',
+      colBuyer:'ገዢ', colProperty:'ንብረት', colPrice:'ጠቅላላ ዋጋ', colPaid:'የተከፈለ', colRemaining:'ቀሪ',
+      noBuyersMatch:'ከፍለጋዎ ጋር የሚዛመድ ገዢ የለም።',
+      brokerPaidB:'ደላላ ተከፍሏል', brokerOwedB:'ደላላ ይገባዋል', noBroker:'ደላላ የለም',
+      totalSalesValue:'ጠቅላላ የሽያጭ ዋጋ', totalCollected:'የተሰበሰበ ጠቅላላ', outstandingBalance:'ያልተከፈለ ቀሪ ሂሳብ',
+      totalCosts:'ጠቅላላ ወጪ', otherIncome:'ሌላ ገቢ', netCash:'በእጅ ያለ ተጣራ ገንዘብ',
+      netCashSub:'የተሰበሰበ + ገቢ − ወጪ', portfolioSub:'ሁሉም ፕሮጀክቶች በአንድ ላይ',
+      exportExcel:'⬇ ወደ ኤክሴል ላክ', exportAll:'⬇ ሁሉንም ፕሮጀክቶች ላክ',
+      rename:'ስም ቀይር', renameProject:'የፕሮጀክት ስም ቀይር', newProjectTitle:'አዲስ ፕሮጀክት', projName:'የፕሮጀክት/ሳይት ስም',
+      cancel:'ይቅር', save:'አስቀምጥ', create:'ፕሮጀክት ፍጠር',
+      unrecorded:'ያልተመዘገበ', buyersWord:'ገዢዎች', costEntries:'የወጪ ግቤቶች',
+      overview:'አጠቃላይ እይታ', saleDate:'የሽያጭ ቀን', totalPrice:'ጠቅላላ ዋጋ', totalPaid:'የተከፈለ ጠቅላላ',
+      remaining:'ቀሪ', brokerFee:'የደላላ ክፍያ', noneRecorded:'የተመዘገበ የለም', notes:'ማስታወሻዎች',
+      paymentHistory:'የክፍያ ታሪክ', recordPayment:'አዲስ ክፍያ ይመዝግቡ',
+      monthlyHint:'መደበኛ ወርሃዊ ክፍያ 50,000 ብር ነው — ለየት ያለ ሁኔታ ካለ መጠኑን ይቀይሩ።',
+      amount:'መጠን', date:'ቀን', note:'ማስታወሻ (አማራጭ)', addPayment:'ክፍያ ጨምር',
+      status:'ሁኔታ', updateBroker:'የደላላ ክፍያ አዘምን', deleteBuyer:'ገዢ ሰርዝ',
+      addBuyerTitle:'ገዢ ጨምር', name:'ስም', propertyType:'የንብረት አይነት', floor:'ፎቅ (አማራጭ)',
+      downPayment:'ቅድሚያ ክፍያ', addBuyerBtn:'ገዢ ጨምር',
+      addCostTitle:'የወጪ ግቤት ጨምር', addRevenueTitle:'የገቢ ግቤት ጨምር', description:'መግለጫ',
+      category:'ምድብ', addEntry:'ግቤት ጨምር',
+      trackerHeading:'ቀሪ ክፍያ ያለባቸው ገዢዎች', trackerSub:'ከመጨረሻው ክፍያ ጀምሮ በረጅም ጊዜ ተደርድሯል',
+      trackerEmpty:'ሁሉም ገዢዎች ሙሉ በሙሉ ከፍለዋል።',
+      lastPayment:'የመጨረሻ ክፍያ', monthsLeft:'~ ወራት ይቀራሉ በ50,000/ወር', logStandard:'50,000 መዝግብ',
+      viewDetails:'ዝርዝር', fullyPaidNote:' ገዢ(ዎች) ሙሉ በሙሉ ከፍለዋል — በገዢዎች ትር ይመልከቱ።',
+      confirmDeleteBuyer:'ይህን ገዢ ማስወገድ ይፈልጋሉ? ይህ ሊቀለበስ አይችልም።',
+      confirmDeleteEntry:'ይህን ግቤት ሰርዝ?', confirmDeleteProject:'ይህን ፕሮጀክት እና ውሂቡን ሁሉ ሰርዝ? ይህ ሊቀለበስ አይችልም።',
+      needOneProject:'ቢያንስ አንድ ፕሮጀክት ያስፈልግዎታል።', enterBuyerName:'የገዢ ስም ያስገቡ።',
+      enterValidAmount:'ትክክለኛ መጠን ያስገቡ።', enterDescAmount:'መግለጫ እና ትክክለኛ መጠን ያስገቡ።',
+      maxProjects:'እስከ '+MAX_PROJECTS+' ፕሮጀክቶች መከታተል ይችላሉ።', enterProjectName:'የፕሮጀክት ስም ያስገቡ።',
+      loading:'መዝገብ በመጫን ላይ…', costsNote:'የግንባታ እና ሌሎች የሳይት ወጪዎች', revenueNote:'ከገዢ ክፍያ ውጪ የተገኘ ገንዘብ (ብድር፣ ካፒታል፣ ተመላሽ ወዘተ)',
+      noCostsYet:'እስካሁን የወጪ ግቤት የለም። ከላይ የመጀመሪያውን ይጨምሩ።', noRevenueYet:'እስካሁን የገቢ ግቤት የለም። ከላይ የመጀመሪያውን ይጨምሩ።',
+      saveError:'ማስቀመጥ አልተቻለም — እባክዎ ግንኙነትዎን ያረጋግጡ እና እንደገና ይሞክሩ።',
+      houseOnly:'ቤት ብቻ', houseShop:'ቤት እና ሱቅ', shopOnly:'ሱቅ ብቻ', twoHouses:'2 ቤቶች ብቻ', houseTwoShops:'1 ቤት + 2 ሱቆች', other:'ሌላ',
+      signInTitle:'ግባ', signInSub:'አስተዳዳሪዎ የሰጠዎትን ኢሜል እና የይለፍ ቃል ያስገቡ።',
+      emailPh:'you@example.com', passwordPh:'የይለፍ ቃል', signInBtn:'ግባ',
+      signInError:'የተሳሳተ ኢሜል ወይም የይለፍ ቃል።', signOut:'ውጣ',
+      noAccessTitle:'እስካሁን መዳረሻ የለም', noAccessSub:'መለያዎ ገና ወደ ምንም ፕሮጀክት መዳረሻ አልተሰጠውም። አስተዳዳሪዎን ያነጋግሩ።',
+      roleAdmin:'አስተዳዳሪ', roleViewer:'ተመልካች (ማየት ብቻ)', viewOnlyNote:'እርስዎ ማየት ብቻ የሚችሉ መዳረሻ አለዎት — ለውጦች በአስተዳዳሪ ይደረጋሉ።',
+      showMoney:'መጠኖችን አሳይ', hideMoney:'መጠኖችን ደብቅ', permanentNote:'ይህ ሊቀለበስ አይችልም።'
     }
   };
 
   var state = {
     theme: 'light', lang: 'en', view: 'projects', activeProjectId: null, tab: 'buyers', search: '',
     projects: [], openBuyerId: null, modal: null, renameTargetId: null, entryType: 'expense',
-    loaded: false, session: null, authEmail: '', authMsg: null, authBusy: false
+    loaded: false, session: null, role: null, roleLoaded: false, projectAccess: 'all',
+    moneyHidden: true, authEmail: '', authPassword: '', authMsg: null, authBusy: false
   };
+  function isAdmin(){ return state.role === 'admin'; }
 
   function t(key){ return (I18N[state.lang] && I18N[state.lang][key]) || I18N.en[key] || key; }
-  function fmt(n){ if(n===null||n===undefined||n===''||isNaN(n)) return '—'; return Math.round(n).toLocaleString('en-US'); }
+  function fmt(n){
+    if(n===null||n===undefined||n===''||isNaN(n)) return '—';
+    if(state.moneyHidden) return '•••••';
+    return Math.round(n).toLocaleString('en-US');
+  }
   function todayStrDMY(){ var d=new Date(); return d.getDate()+'/'+(d.getMonth()+1)+'/'+d.getFullYear(); }
   function sortKey(s){ if(!s) return '0000-00-00'; var p=s.split('/'); if(p.length===3) return p[2]+'-'+p[1].padStart(2,'0')+'-'+p[0].padStart(2,'0'); return s; }
   function el(tag, attrs, children){
@@ -302,7 +365,26 @@
   async function refreshAndRender(){ await fetchAll(); render(); }
 
   /* ---------------- auth ---------------- */
+  function loadPrefs(){
+    try{
+      var th = localStorage.getItem('mesken_theme'); if(th) state.theme = th;
+      var lg = localStorage.getItem('mesken_lang'); if(lg) state.lang = lg;
+      var mh = localStorage.getItem('mesken_money_hidden'); if(mh !== null) state.moneyHidden = (mh === '1');
+    }catch(e){}
+  }
+
+  async function fetchRole(){
+    if(!state.session){ state.role=null; state.roleLoaded=true; return; }
+    try{
+      var res = await sb.from('user_roles').select('role,project_access').eq('email', state.session.user.email).maybeSingle();
+      if(res.data){ state.role = res.data.role; state.projectAccess = res.data.project_access; }
+      else { state.role = null; }
+    }catch(e){ state.role = null; }
+    state.roleLoaded = true;
+  }
+
   async function initAuth(){
+    loadPrefs();
     if(!CONFIGURED){ render(); return; }
     var res = await sb.auth.getSession();
     state.session = res.data.session;
@@ -314,6 +396,8 @@
   }
 
   async function loadAppData(){
+    await fetchRole();
+    if(!state.role){ render(); return; }
     await fetchAll();
     state.loaded = true;
     render();
@@ -339,15 +423,6 @@
   function teardownRealtime(){
     if(sb){ sb.removeAllChannels(); }
     state.subscribed = false;
-  }
-
-  async function sendMagicLink(email){
-    state.authBusy = true; state.authMsg = null; render();
-    var res = await sb.auth.signInWithOtp({ email: email, options: { emailRedirectTo: window.location.href } });
-    state.authBusy = false;
-    if(res.error){ state.authMsg = {kind:'err', text: t('signInError')+' ('+res.error.message+')'}; }
-    else { state.authMsg = {kind:'ok', text: t('linkSent')}; }
-    render();
   }
 
   /* ---------------- Excel export (same as before, from fetched data) ---------------- */
@@ -405,20 +480,41 @@
 
     if(!state.session){ root.appendChild(renderAuthScreen()); return; }
 
+    if(!state.roleLoaded){
+      root.appendChild(renderBrandHeader());
+      root.appendChild(el('div',{class:'empty'},[t('loading')]));
+      return;
+    }
+    if(!state.role){
+      root.appendChild(renderBrandHeader());
+      root.appendChild(renderNoAccessScreen());
+      return;
+    }
+
     if(!state.loaded){
       root.appendChild(renderBrandHeader());
       root.appendChild(el('div',{class:'empty'},[t('loading')]));
       return;
     }
     root.appendChild(renderBrandHeader());
+    if(!isAdmin()) root.appendChild(el('div',{class:'exp-toolbar-extra', style:'margin:-8px 0 14px;'},[t('viewOnlyNote')]));
     if(state.view==='projects' || !activeProject()) root.appendChild(renderProjectsView());
     else root.appendChild(renderProjectDetail());
 
     if(state.openBuyerId) root.appendChild(renderBuyerDrawer());
-    if(state.modal==='addBuyer') root.appendChild(renderAddBuyerModal());
-    if(state.modal==='addEntry') root.appendChild(renderAddEntryModal());
-    if(state.modal==='addProject') root.appendChild(renderProjectFormModal(null));
-    if(state.modal==='renameProject') root.appendChild(renderProjectFormModal(state.renameTargetId));
+    if(isAdmin() && state.modal==='addBuyer') root.appendChild(renderAddBuyerModal());
+    if(isAdmin() && state.modal==='addEntry') root.appendChild(renderAddEntryModal());
+    if(isAdmin() && state.modal==='addProject') root.appendChild(renderProjectFormModal(null));
+    if(isAdmin() && state.modal==='renameProject') root.appendChild(renderProjectFormModal(state.renameTargetId));
+  }
+
+  function renderNoAccessScreen(){
+    var box = el('div',{class:'auth-wrap'});
+    box.appendChild(el('div',{class:'brand-mark', style:'margin:0 auto;'}));
+    box.appendChild(el('h2',{},[t('noAccessTitle')]));
+    box.appendChild(el('p',{},[t('noAccessSub')]));
+    box.appendChild(el('button',{class:'btn btn-ghost', style:'width:100%;', onclick:function(){ teardownRealtime(); sb.auth.signOut(); state.loaded=false; state.projects=[]; state.role=null; state.roleLoaded=false; }},[t('signOut')]));
+    return box;
   }
 
   function renderConfigWarning(){
@@ -439,15 +535,25 @@
     box.appendChild(el('h2',{},[t('signInTitle')]));
     box.appendChild(el('p',{},[t('signInSub')]));
     var emailInput = el('input',{type:'email', placeholder:t('emailPh'), value: state.authEmail, oninput:function(e){ state.authEmail = e.target.value; }});
+    var passwordInput = el('input',{type:'password', placeholder:t('passwordPh'), value: state.authPassword, oninput:function(e){ state.authPassword = e.target.value; }});
     box.appendChild(emailInput);
+    box.appendChild(passwordInput);
     box.appendChild(el('button',{class:'btn btn-primary', style:'width:100%;', disabled: state.authBusy?'true':null, onclick:function(){
-      var v = emailInput.value.trim();
-      if(!v || v.indexOf('@')===-1){ state.authMsg={kind:'err',text:t('signInError')}; render(); return; }
-      sendMagicLink(v);
-    }},[t('sendLink')]));
+      doSignIn(emailInput.value.trim(), passwordInput.value);
+    }},[t('signInBtn')]));
     if(state.authMsg){ box.appendChild(el('div',{class:'auth-msg '+(state.authMsg.kind==='ok'?'ok':'err')},[state.authMsg.text])); }
     wrap.appendChild(box);
     return wrap;
+  }
+
+  async function doSignIn(email, password){
+    if(!email || email.indexOf('@')===-1 || !password){ state.authMsg={kind:'err',text:t('signInError')}; render(); return; }
+    state.authBusy = true; state.authMsg = null; render();
+    var res = await sb.auth.signInWithPassword({ email: email, password: password });
+    state.authBusy = false;
+    if(res.error){ state.authMsg = {kind:'err', text: t('signInError')}; render(); return; }
+    state.session = res.data.session;
+    await loadAppData();
   }
 
   function renderBrandHeader(){
@@ -457,10 +563,20 @@
     left.appendChild(el('div',{class:'title-row'},[ el('div',{class:'brand-mark'}), el('h1',{},[t('brand')]) ]));
     top.appendChild(left);
     var toggles = el('div',{class:'toggles'});
-    if(state.session){ toggles.appendChild(el('span',{class:'who'},[state.session.user.email])); }
-    toggles.appendChild(el('div',{class:'toggle', onclick:function(){ state.theme = state.theme==='dark'?'light':'dark'; render(); }},[ el('span',{},[state.theme==='dark'?t('dark'):t('light')]), el('span',{class:'dot'}) ]));
     if(state.session){
-      toggles.appendChild(el('button',{class:'btn btn-ghost btn-sm', onclick:function(){ teardownRealtime(); sb.auth.signOut(); state.loaded=false; state.projects=[]; }},[t('signOut')]));
+      var whoBits = [state.session.user.email];
+      if(state.roleLoaded && state.role) whoBits.push(' · '+(state.role==='admin'?t('roleAdmin'):t('roleViewer')));
+      toggles.appendChild(el('span',{class:'who'},whoBits));
+    }
+    toggles.appendChild(el('div',{class:'toggle', onclick:function(){ state.lang = state.lang==='en'?'am':'en'; try{localStorage.setItem('mesken_lang', state.lang);}catch(e){} render(); }},[ el('span',{},[state.lang==='en'?'EN':'አማ']), el('span',{class:'dot'}) ]));
+    toggles.appendChild(el('div',{class:'toggle', onclick:function(){ state.theme = state.theme==='dark'?'light':'dark'; try{localStorage.setItem('mesken_theme', state.theme);}catch(e){} render(); }},[ el('span',{},[state.theme==='dark'?t('dark'):t('light')]), el('span',{class:'dot'}) ]));
+    if(state.session){
+      toggles.appendChild(el('div',{class:'toggle', title: state.moneyHidden?t('showMoney'):t('hideMoney'), onclick:function(){
+        state.moneyHidden = !state.moneyHidden;
+        try{ localStorage.setItem('mesken_money_hidden', state.moneyHidden ? '1' : '0'); }catch(e){}
+        render();
+      }},[ el('span',{},[state.moneyHidden ? '\uD83D\uDC41\u200D\uD83D\uDDE8 ' + t('showMoney') : '\uD83D\uDC41 ' + t('hideMoney')]) ]));
+      toggles.appendChild(el('button',{class:'btn btn-ghost btn-sm', onclick:function(){ teardownRealtime(); sb.auth.signOut(); state.loaded=false; state.projects=[]; state.role=null; state.roleLoaded=false; }},[t('signOut')]));
     }
     top.appendChild(toggles);
     wrapAll.appendChild(top);
@@ -503,14 +619,16 @@
       var ps = projectSummary(p);
       var card = el('div',{class:'proj-card', onclick:function(){ state.activeProjectId=p.id; state.view='project'; state.tab='buyers'; render(); }});
       var actions = el('div',{class:'proj-actions'});
-      actions.appendChild(el('span',{class:'icon-btn', title:t('rename'), onclick:function(ev){ ev.stopPropagation(); state.renameTargetId=p.id; state.modal='renameProject'; render(); }},['✎']));
-      actions.appendChild(el('span',{class:'icon-btn', title:'Delete', onclick:function(ev){
-        ev.stopPropagation();
-        if(state.projects.length<=1){ alert(t('needOneProject')); return; }
-        if(confirm(t('confirmDeleteProject'))){
-          sb.from('projects').delete().eq('id', p.id).then(function(){ refreshAndRender(); });
-        }
-      }},['×']));
+      if(isAdmin()){
+        actions.appendChild(el('span',{class:'icon-btn', title:t('rename'), onclick:function(ev){ ev.stopPropagation(); state.renameTargetId=p.id; state.modal='renameProject'; render(); }},['✎']));
+        actions.appendChild(el('span',{class:'icon-btn', title:'Delete', onclick:function(ev){
+          ev.stopPropagation();
+          if(state.projects.length<=1){ alert(t('needOneProject')); return; }
+          if(confirm(t('confirmDeleteProject')+' '+t('permanentNote'))){
+            sb.from('projects').delete().eq('id', p.id).then(function(){ refreshAndRender(); });
+          }
+        }},['×']));
+      }
       card.appendChild(actions);
       card.appendChild(el('div',{class:'pname'},[p.name]));
       card.appendChild(el('div',{class:'pmeta'},[p.buyers.length+' '+t('buyersWord')+' · '+p.expenses.length+' '+t('costEntries')]));
@@ -520,7 +638,7 @@
       card.appendChild(el('div',{class:'proj-stat'},[el('span',{},[t('netCash')]), el('b',{style:'color:var(--accent)'},[fmt(ps.net)+' ETB'])]));
       grid.appendChild(card);
     });
-    if(state.projects.length < MAX_PROJECTS){
+    if(isAdmin() && state.projects.length < MAX_PROJECTS){
       grid.appendChild(el('div',{class:'add-proj-card', onclick:function(){ state.modal='addProject'; render(); }},[t('newProject')]));
     }
     frag.appendChild(grid);
@@ -562,7 +680,7 @@
     var frag = el('div');
     var toolbar = el('div',{class:'toolbar'});
     toolbar.appendChild(el('input',{class:'search', placeholder:t('searchPh'), value: state.search, oninput:function(e){ state.search=e.target.value; render(); }}));
-    toolbar.appendChild(el('button',{class:'btn btn-primary', onclick:function(){ state.modal='addBuyer'; render(); }},[t('addBuyer')]));
+    if(isAdmin()) toolbar.appendChild(el('button',{class:'btn btn-primary', onclick:function(){ state.modal='addBuyer'; render(); }},[t('addBuyer')]));
     frag.appendChild(toolbar);
     frag.appendChild(el('div',{class:'colhead'},[el('div',{},[t('colBuyer')]),el('div',{},[t('colProperty')]),el('div',{},[t('colPrice')]),el('div',{},[t('colPaid')]),el('div',{},[t('colRemaining')]),el('div',{},[''])]));
 
@@ -609,11 +727,13 @@
       left.appendChild(el('div',{class:'meta'},[t('remaining')+': '+fmt(b.remainingBalance)+' ETB · '+t('lastPayment')+': '+(lastP?lastP.date:'—')+' · ~'+monthsLeft+t('monthsLeft')]));
       row.appendChild(left);
       var right = el('div',{class:'tr-right'});
-      right.appendChild(el('button',{class:'btn btn-primary btn-sm', onclick:function(){
-        sb.from('payments').insert({buyer_id:b.id, date:todayStrDMY(), amount:MONTHLY_STANDARD, note:'Monthly payment'}).then(function(res){
-          if(res.error){ alert(t('saveError')); return; } refreshAndRender();
-        });
-      }},[t('logStandard')]));
+      if(isAdmin()){
+        right.appendChild(el('button',{class:'btn btn-primary btn-sm', onclick:function(){
+          sb.from('payments').insert({buyer_id:b.id, date:todayStrDMY(), amount:MONTHLY_STANDARD, note:'Monthly payment'}).then(function(res){
+            if(res.error){ alert(t('saveError')); return; } refreshAndRender();
+          });
+        }},[t('logStandard')]));
+      }
       right.appendChild(el('button',{class:'btn btn-ghost btn-sm', onclick:function(){ state.openBuyerId=b.id; render(); }},[t('viewDetails')]));
       row.appendChild(right);
       frag.appendChild(row);
@@ -631,7 +751,7 @@
     var toolbar = el('div',{class:'toolbar'});
     toolbar.appendChild(el('div',{class:'exp-toolbar-extra'},[type==='income'?t('revenueNote'):t('costsNote')]));
     toolbar.appendChild(el('div',{style:'flex:1'}));
-    toolbar.appendChild(el('button',{class:'btn btn-primary', onclick:function(){ state.modal='addEntry'; state.entryType=type; render(); }},[type==='income'?t('addRevenue'):t('addCost')]));
+    if(isAdmin()) toolbar.appendChild(el('button',{class:'btn btn-primary', onclick:function(){ state.modal='addEntry'; state.entryType=type; render(); }},[type==='income'?t('addRevenue'):t('addCost')]));
     frag.appendChild(toolbar);
     var entries = proj.expenses.filter(function(x){ return (x.type==='income')===(type==='income'); }).slice().sort(function(a,b){ return sortKey(b.date).localeCompare(sortKey(a.date)); });
     if(entries.length===0){ frag.appendChild(el('div',{class:'empty'},[type==='income'?t('noRevenueYet'):t('noCostsYet')])); return frag; }
@@ -642,9 +762,11 @@
       var mid = el('div'); mid.appendChild(el('div',{style:'font-weight:600;font-size:13.5px;line-height:1.4;'},[x.description||'—'])); row.appendChild(mid);
       row.appendChild(el('span',{class:'cat'+(isInc?' income':'')},[x.category||'Other']));
       row.appendChild(el('div',{class:'amt'+(isInc?' income':'')},[(isInc?'+ ':'− ')+fmt(x.amount)+' ETB']));
-      row.appendChild(el('span',{class:'close-x', title:'Delete', onclick:function(){
-        if(confirm(t('confirmDeleteEntry'))){ sb.from('cost_revenue').delete().eq('id', x.id).then(function(){ refreshAndRender(); }); }
-      }},['×']));
+      if(isAdmin()){
+        row.appendChild(el('span',{class:'close-x', title:'Delete', onclick:function(){
+          if(confirm(t('confirmDeleteEntry')+' '+t('permanentNote'))){ sb.from('cost_revenue').delete().eq('id', x.id).then(function(){ refreshAndRender(); }); }
+        }},['×']));
+      }
       frag.appendChild(row);
     });
     return frag;
@@ -680,46 +802,50 @@
     b.payments.slice().sort(function(a,b2){ return sortKey(b2.date).localeCompare(sortKey(a.date)); }).forEach(function(p){
       var item = el('div',{class:'pay-item'});
       var left = el('div'); left.appendChild(el('div',{},[fmt(p.amount)+' ETB'])); left.appendChild(el('div',{class:'d'},[p.date])); if(p.note) left.appendChild(el('div',{class:'n'},[p.note])); item.appendChild(left);
-      item.appendChild(el('span',{class:'close-x', style:'font-size:16px;', title:'Remove', onclick:function(){
-        sb.from('payments').delete().eq('id', p.id).then(function(){ refreshAndRender(); });
-      }},['×']));
+      if(isAdmin()){
+        item.appendChild(el('span',{class:'close-x', style:'font-size:16px;', title:'Remove', onclick:function(){
+          sb.from('payments').delete().eq('id', p.id).then(function(){ refreshAndRender(); });
+        }},['×']));
+      }
       payList.appendChild(item);
     });
     drawer.appendChild(payList);
 
-    drawer.appendChild(el('div',{class:'section-title'},[t('recordPayment')]));
-    drawer.appendChild(el('div',{class:'hint'},[t('monthlyHint')]));
-    var amtInput = el('input',{type:'number', value:String(MONTHLY_STANDARD)});
-    var dateInput = el('input',{type:'text', placeholder:t('date'), value: todayStrDMY()});
-    var noteInput = el('input',{type:'text', placeholder:t('note')});
-    drawer.appendChild(el('div',{class:'field'},[el('label',{},[t('amount')]), amtInput]));
-    drawer.appendChild(el('div',{class:'field'},[el('label',{},[t('date')]), dateInput]));
-    drawer.appendChild(el('div',{class:'field'},[el('label',{},[t('note')]), noteInput]));
-    drawer.appendChild(el('button',{class:'btn btn-primary', style:'width:100%;', onclick:function(){
-      var amt = parseFloat(amtInput.value);
-      if(!amt||amt<=0){ alert(t('enterValidAmount')); return; }
-      sb.from('payments').insert({buyer_id:b.id, date:dateInput.value||todayStrDMY(), amount:amt, note:noteInput.value}).then(function(res){
-        if(res.error){ alert(t('saveError')); return; } refreshAndRender();
-      });
-    }},[t('addPayment')]));
+    if(isAdmin()){
+      drawer.appendChild(el('div',{class:'section-title'},[t('recordPayment')]));
+      drawer.appendChild(el('div',{class:'hint'},[t('monthlyHint')]));
+      var amtInput = el('input',{type:'number', value:String(MONTHLY_STANDARD)});
+      var dateInput = el('input',{type:'text', placeholder:t('date'), value: todayStrDMY()});
+      var noteInput = el('input',{type:'text', placeholder:t('note')});
+      drawer.appendChild(el('div',{class:'field'},[el('label',{},[t('amount')]), amtInput]));
+      drawer.appendChild(el('div',{class:'field'},[el('label',{},[t('date')]), dateInput]));
+      drawer.appendChild(el('div',{class:'field'},[el('label',{},[t('note')]), noteInput]));
+      drawer.appendChild(el('button',{class:'btn btn-primary', style:'width:100%;', onclick:function(){
+        var amt = parseFloat(amtInput.value);
+        if(!amt||amt<=0){ alert(t('enterValidAmount')); return; }
+        sb.from('payments').insert({buyer_id:b.id, date:dateInput.value||todayStrDMY(), amount:amt, note:noteInput.value}).then(function(res){
+          if(res.error){ alert(t('saveError')); return; } refreshAndRender();
+        });
+      }},[t('addPayment')]));
 
-    drawer.appendChild(el('div',{class:'section-title'},[t('brokerFee')]));
-    var bfAmt = el('input',{type:'number', placeholder:t('amount'), value: b.brokerFee||''});
-    var bfStatus = el('select',{},[el('option',{value:''},[t('noBroker')]), el('option',{value:'Owed'},[t('brokerOwedB')]), el('option',{value:'Paid'},[t('brokerPaidB')])]);
-    bfStatus.value = b.brokerFeeStatus || '';
-    drawer.appendChild(el('div',{class:'grid2'},[el('div',{class:'field'},[el('label',{},[t('amount')]), bfAmt]), el('div',{class:'field'},[el('label',{},[t('status')]), bfStatus])]));
-    drawer.appendChild(el('button',{class:'btn btn-ghost', style:'width:100%;', onclick:function(){
-      sb.from('buyers').update({broker_fee: bfAmt.value?parseFloat(bfAmt.value):null, broker_fee_status: bfStatus.value||null}).eq('id', b.id).then(function(res){
-        if(res.error){ alert(t('saveError')); return; } refreshAndRender();
-      });
-    }},[t('updateBroker')]));
+      drawer.appendChild(el('div',{class:'section-title'},[t('brokerFee')]));
+      var bfAmt = el('input',{type:'number', placeholder:t('amount'), value: b.brokerFee||''});
+      var bfStatus = el('select',{},[el('option',{value:''},[t('noBroker')]), el('option',{value:'Owed'},[t('brokerOwedB')]), el('option',{value:'Paid'},[t('brokerPaidB')])]);
+      bfStatus.value = b.brokerFeeStatus || '';
+      drawer.appendChild(el('div',{class:'grid2'},[el('div',{class:'field'},[el('label',{},[t('amount')]), bfAmt]), el('div',{class:'field'},[el('label',{},[t('status')]), bfStatus])]));
+      drawer.appendChild(el('button',{class:'btn btn-ghost', style:'width:100%;', onclick:function(){
+        sb.from('buyers').update({broker_fee: bfAmt.value?parseFloat(bfAmt.value):null, broker_fee_status: bfStatus.value||null}).eq('id', b.id).then(function(res){
+          if(res.error){ alert(t('saveError')); return; } refreshAndRender();
+        });
+      }},[t('updateBroker')]));
 
-    drawer.appendChild(el('div',{style:'height:12px;'}));
-    drawer.appendChild(el('button',{class:'btn btn-danger', style:'width:100%;', onclick:function(){
-      if(confirm(t('confirmDeleteBuyer'))){
-        sb.from('buyers').delete().eq('id', b.id).then(function(){ state.openBuyerId=null; refreshAndRender(); });
-      }
-    }},[t('deleteBuyer')]));
+      drawer.appendChild(el('div',{style:'height:12px;'}));
+      drawer.appendChild(el('button',{class:'btn btn-danger', style:'width:100%;', onclick:function(){
+        if(confirm(t('confirmDeleteBuyer')+' '+t('permanentNote'))){
+          sb.from('buyers').delete().eq('id', b.id).then(function(){ state.openBuyerId=null; refreshAndRender(); });
+        }
+      }},[t('deleteBuyer')]));
+    }
 
     return overlayWrap('drawer', drawer, close);
   }
