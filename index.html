@@ -195,8 +195,8 @@
      1) FILL THESE IN after you create your Supabase project:
         Settings -> API -> Project URL, and the "anon public" key.
      ======================================================================= */
-  var SUPABASE_URL = 'https://bjwdakhbwsmgunorlewq.supabase.co';
-  var SUPABASE_ANON_KEY = 'sb_publishable_0vwna_W524FjQ9zT5C7phg_3mN7LLyK';
+  var SUPABASE_URL = 'YOUR_SUPABASE_URL_HERE';
+  var SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY_HERE';
 
   var MAX_PROJECTS = 10;
   var MONTHLY_STANDARD = 50000;
@@ -426,17 +426,32 @@
   }
 
   /* ---------------- Excel export (same as before, from fetched data) ---------------- */
+  function autoWidth(ws, rows){
+    if(!rows || !rows.length) return;
+    var keys = Object.keys(rows[0]);
+    ws['!cols'] = keys.map(function(k){
+      var maxLen = String(k).length;
+      rows.forEach(function(r){ var v = r[k]; var len = v===null||v===undefined ? 0 : String(v).length; if(len>maxLen) maxLen=len; });
+      return { wch: Math.min(Math.max(maxLen+2, 10), 42) };
+    });
+  }
+  function addSheet(wb2, rows, name){
+    var ws = XLSX.utils.json_to_sheet(rows);
+    autoWidth(ws, rows);
+    XLSX.utils.book_append_sheet(wb2, ws, name);
+  }
+
   function exportProjectToExcel(proj){
     if(typeof XLSX==='undefined'){ alert('Excel export library did not load.'); return; }
     var wb2 = XLSX.utils.book_new();
     var buyerRows = proj.buyers.map(function(b){ return {'No.':b.id,'Name':b.name,'Property Type':b.propertyType,'Floor':b.floor,'Sale Date':b.date,'Total Price (ETB)':b.totalPrice,'Total Paid (ETB)':b.totalPaid,'Remaining (ETB)':b.remainingBalance,'Broker Fee (ETB)':b.brokerFee,'Broker Status':b.brokerFeeStatus,'Notes':b.notes}; });
-    XLSX.utils.book_append_sheet(wb2, XLSX.utils.json_to_sheet(buyerRows), 'Buyers');
+    addSheet(wb2, buyerRows, 'Buyers');
     var payRows = []; proj.buyers.forEach(function(b){ b.payments.forEach(function(p){ payRows.push({'Buyer':b.name,'Date':p.date,'Amount (ETB)':p.amount,'Note':p.note||''}); }); });
-    XLSX.utils.book_append_sheet(wb2, XLSX.utils.json_to_sheet(payRows), 'Payments');
+    addSheet(wb2, payRows, 'Payments');
     var costRows = proj.expenses.filter(function(x){return x.type!=='income';}).map(function(x){ return {'Date':x.date,'Description':x.description,'Category':x.category,'Amount (ETB)':x.amount}; });
-    XLSX.utils.book_append_sheet(wb2, XLSX.utils.json_to_sheet(costRows), 'Costs');
+    addSheet(wb2, costRows, 'Costs');
     var revRows = proj.expenses.filter(function(x){return x.type==='income';}).map(function(x){ return {'Date':x.date,'Description':x.description,'Category':x.category,'Amount (ETB)':x.amount}; });
-    XLSX.utils.book_append_sheet(wb2, XLSX.utils.json_to_sheet(revRows), 'Revenue');
+    addSheet(wb2, revRows, 'Revenue');
     XLSX.writeFile(wb2, proj.name.replace(/[^\w\-]+/g,'_')+'.xlsx');
   }
   function exportPortfolioToExcel(){
@@ -446,7 +461,32 @@
       var s = projectSummary(p);
       return {'Project':p.name,'Buyers':p.buyers.length,'Sales Value':s.salesValue,'Collected':s.collected,'Outstanding':s.outstanding,'Costs':s.expenses,'Other Income':s.income,'Net Cash':s.net};
     });
-    XLSX.utils.book_append_sheet(wb2, XLSX.utils.json_to_sheet(overview), 'Portfolio Overview');
+    addSheet(wb2, overview, 'Portfolio Overview');
+
+    var usedNames = {};
+    function uniqueSheetName(base){
+      var name = base.replace(/[^\w]+/g,'_').slice(0,28) || 'Sheet';
+      var candidate = name; var n = 1;
+      while(usedNames[candidate]){ n++; candidate = (name.slice(0,26))+'_'+n; }
+      usedNames[candidate] = true;
+      return candidate;
+    }
+
+    state.projects.forEach(function(p){
+      var tag = p.name.replace(/[^\w]+/g,'').slice(0,10) || ('P'+p.id);
+      var buyerRows = p.buyers.map(function(b){ return {'No.':b.id,'Name':b.name,'Property Type':b.propertyType,'Floor':b.floor,'Sale Date':b.date,'Total Price (ETB)':b.totalPrice,'Total Paid (ETB)':b.totalPaid,'Remaining (ETB)':b.remainingBalance,'Broker Fee (ETB)':b.brokerFee,'Broker Status':b.brokerFeeStatus,'Notes':b.notes}; });
+      addSheet(wb2, buyerRows, uniqueSheetName(tag+'_Buyers'));
+
+      var payRows = []; p.buyers.forEach(function(b){ b.payments.forEach(function(pay){ payRows.push({'Buyer':b.name,'Date':pay.date,'Amount (ETB)':pay.amount,'Note':pay.note||''}); }); });
+      addSheet(wb2, payRows, uniqueSheetName(tag+'_Payments'));
+
+      var costRows = p.expenses.filter(function(x){return x.type!=='income';}).map(function(x){ return {'Date':x.date,'Description':x.description,'Category':x.category,'Amount (ETB)':x.amount}; });
+      addSheet(wb2, costRows, uniqueSheetName(tag+'_Costs'));
+
+      var revRows = p.expenses.filter(function(x){return x.type==='income';}).map(function(x){ return {'Date':x.date,'Description':x.description,'Category':x.category,'Amount (ETB)':x.amount}; });
+      addSheet(wb2, revRows, uniqueSheetName(tag+'_Revenue'));
+    });
+
     XLSX.writeFile(wb2, 'Mesken_Real_Estate_Portfolio.xlsx');
   }
 
