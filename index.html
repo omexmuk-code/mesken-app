@@ -195,9 +195,8 @@
      1) FILL THESE IN after you create your Supabase project:
         Settings -> API -> Project URL, and the "anon public" key.
      ======================================================================= */
-     var SUPABASE_URL = 'https://bjwdakhbwsmgunorlewq.supabase.co';
-   var SUPABASE_ANON_KEY = 'sb_publishable_0vwna_W524FjQ9zT5C7phg_3mN7LLyK';
- 
+  var SUPABASE_URL = 'YOUR_SUPABASE_URL_HERE';
+  var SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY_HERE';
 
   var MAX_PROJECTS = 10;
   var MONTHLY_STANDARD = 50000;
@@ -256,7 +255,7 @@
       addNote:'Add Note', noNotesYet:'No notes yet.', confirmDeleteNote:'Delete this note?',
       trashEmpty:'Nothing in the trash right now.', restore:'Restore', deletedBuyers:'Deleted buyers',
       deletedEntries:'Deleted cost/revenue entries', deletedOn:'Deleted', deletedProjects:'Recently deleted projects',
-      noDeletedProjects:'No deleted projects.'
+      noDeletedProjects:'No deleted projects.', deleteForever:'Delete Forever', confirmDeleteForever:'Permanently delete this? There is no undo after this.'
     },
     am: {
       brand:'Mesken Real Estate', brandline:'መስከን ሪል እስቴት',
@@ -309,7 +308,7 @@
       addNote:'ማስታወሻ ጨምር', noNotesYet:'እስካሁን ማስታወሻ የለም።', confirmDeleteNote:'ይህን ማስታወሻ ሰርዝ?',
       trashEmpty:'በቆሻሻ ውስጥ ምንም የለም።', restore:'መልስ', deletedBuyers:'የተሰረዙ ገዢዎች',
       deletedEntries:'የተሰረዙ የወጪ/ገቢ ግቤቶች', deletedOn:'የተሰረዘበት', deletedProjects:'በቅርቡ የተሰረዙ ፕሮጀክቶች',
-      noDeletedProjects:'የተሰረዘ ፕሮጀክት የለም።'
+      noDeletedProjects:'የተሰረዘ ፕሮጀክት የለም።', deleteForever:'ለዘላለም ሰርዝ', confirmDeleteForever:'ይህን ለዘላለም መሰረዝ ይፈልጋሉ? ከዚህ በኋላ መመለስ አይቻልም።'
     }
   };
 
@@ -718,9 +717,16 @@
         state.deletedProjects.forEach(function(dp){
           var row = el('div',{class:'pay-item'});
           row.appendChild(el('div',{},[el('div',{},[dp.name]), el('div',{class:'d'},[t('deletedOn')+': '+new Date(dp.deleted_at).toLocaleString()])]));
-          row.appendChild(el('button',{class:'btn btn-ghost btn-sm', onclick:function(){
+          var btns = el('div',{style:'display:flex;gap:6px;'});
+          btns.appendChild(el('button',{class:'btn btn-ghost btn-sm', onclick:function(){
             sb.from('projects').update({deleted_at:null}).eq('id', dp.id).then(function(){ state.deletedProjectsLoaded=false; refreshAndRender(); });
           }},[t('restore')]));
+          btns.appendChild(el('button',{class:'btn btn-danger btn-sm', onclick:function(){
+            if(confirm(t('confirmDeleteForever'))){
+              sb.from('projects').delete().eq('id', dp.id).then(function(){ state.deletedProjectsLoaded=false; refreshAndRender(); });
+            }
+          }},[t('deleteForever')]));
+          row.appendChild(btns);
           frag.appendChild(row);
         });
       }
@@ -809,9 +815,16 @@
       trash.buyers.forEach(function(b){
         var row = el('div',{class:'pay-item'});
         row.appendChild(el('div',{},[el('div',{},[b.name+' — '+(b.propertyType||'')]), el('div',{class:'d'},[t('deletedOn')+': '+new Date(b.deleted_at).toLocaleString()])]));
-        row.appendChild(el('button',{class:'btn btn-ghost btn-sm', onclick:function(){
+        var btns = el('div',{style:'display:flex;gap:6px;'});
+        btns.appendChild(el('button',{class:'btn btn-ghost btn-sm', onclick:function(){
           sb.from('buyers').update({deleted_at:null}).eq('id', b.id).then(function(){ fetchTrash(proj).then(function(){ refreshAndRender(); }); });
         }},[t('restore')]));
+        btns.appendChild(el('button',{class:'btn btn-danger btn-sm', onclick:function(){
+          if(confirm(t('confirmDeleteForever'))){
+            sb.from('buyers').delete().eq('id', b.id).then(function(){ fetchTrash(proj).then(function(){ refreshAndRender(); }); });
+          }
+        }},[t('deleteForever')]));
+        row.appendChild(btns);
         frag.appendChild(row);
       });
     }
@@ -820,9 +833,16 @@
       trash.costRevenue.forEach(function(x){
         var row = el('div',{class:'pay-item'});
         row.appendChild(el('div',{},[el('div',{},[x.description+' — '+fmt(x.amount)+' ETB']), el('div',{class:'d'},[t('deletedOn')+': '+new Date(x.deleted_at).toLocaleString()])]));
-        row.appendChild(el('button',{class:'btn btn-ghost btn-sm', onclick:function(){
+        var btns2 = el('div',{style:'display:flex;gap:6px;'});
+        btns2.appendChild(el('button',{class:'btn btn-ghost btn-sm', onclick:function(){
           sb.from('cost_revenue').update({deleted_at:null}).eq('id', x.id).then(function(){ fetchTrash(proj).then(function(){ refreshAndRender(); }); });
         }},[t('restore')]));
+        btns2.appendChild(el('button',{class:'btn btn-danger btn-sm', onclick:function(){
+          if(confirm(t('confirmDeleteForever'))){
+            sb.from('cost_revenue').delete().eq('id', x.id).then(function(){ fetchTrash(proj).then(function(){ refreshAndRender(); }); });
+          }
+        }},[t('deleteForever')]));
+        row.appendChild(btns2);
         frag.appendChild(row);
       });
     }
