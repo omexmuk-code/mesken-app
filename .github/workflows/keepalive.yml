@@ -1,0 +1,17 @@
+name: Supabase Keepalive
+
+on:
+  schedule:
+    - cron: '0 3 */3 * *'   # runs every 3 days, well inside the 7-day pause window
+  workflow_dispatch: {}     # lets you also trigger it manually from GitHub any time
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase database
+        run: |
+          curl -s -o /dev/null -w "Supabase responded with HTTP %{http_code}\n" \
+            "https://bjwdakhbwsmgunorlewq.supabase.co/rest/v1/projects?select=id&limit=1" \
+            -H "apikey: sb_publishable_0vwna_W524FjQ9zT5C7phg_3mN7LLyK" \
+            -H "Authorization: Bearer sb_publishable_0vwna_W524FjQ9zT5C7phg_3mN7LLyK"
