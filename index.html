@@ -197,7 +197,7 @@
      ======================================================================= */
   var SUPABASE_URL = 'https://bjwdakhbwsmgunorlewq.supabase.co';
    var SUPABASE_ANON_KEY = 'sb_publishable_0vwna_W524FjQ9zT5C7phg_3mN7LLyK';
-
+   
   var MAX_PROJECTS = 10;
   var MONTHLY_STANDARD = 50000;
   var CONFIGURED = SUPABASE_URL.indexOf('YOUR_SUPABASE') === -1 && SUPABASE_ANON_KEY.indexOf('YOUR_SUPABASE') === -1;
@@ -255,7 +255,10 @@
       addNote:'Add Note', noNotesYet:'No notes yet.', confirmDeleteNote:'Delete this note?',
       trashEmpty:'Nothing in the trash right now.', restore:'Restore', deletedBuyers:'Deleted buyers',
       deletedEntries:'Deleted cost/revenue entries', deletedOn:'Deleted', deletedProjects:'Recently deleted projects',
-      noDeletedProjects:'No deleted projects.', deleteForever:'Delete Forever', confirmDeleteForever:'Permanently delete this? There is no undo after this.'
+      noDeletedProjects:'No deleted projects.', deleteForever:'Delete Forever', confirmDeleteForever:'Permanently delete this? There is no undo after this.',
+      attachments:'Attachments', attachmentsSub:'Receipts, screenshots, or PDFs for this entry.', uploadFile:'Upload File',
+      noAttachmentsYet:'No files attached yet.', uploading:'Uploading…', confirmDeleteAttachment:'Delete this file?',
+      fileTooBig:'That file is too large (max 15MB).', uploadError:'Could not upload that file — please try again.'
     },
     am: {
       brand:'Mesken Real Estate', brandline:'መስከን ሪል እስቴት',
@@ -308,7 +311,10 @@
       addNote:'ማስታወሻ ጨምር', noNotesYet:'እስካሁን ማስታወሻ የለም።', confirmDeleteNote:'ይህን ማስታወሻ ሰርዝ?',
       trashEmpty:'በቆሻሻ ውስጥ ምንም የለም።', restore:'መልስ', deletedBuyers:'የተሰረዙ ገዢዎች',
       deletedEntries:'የተሰረዙ የወጪ/ገቢ ግቤቶች', deletedOn:'የተሰረዘበት', deletedProjects:'በቅርቡ የተሰረዙ ፕሮጀክቶች',
-      noDeletedProjects:'የተሰረዘ ፕሮጀክት የለም።', deleteForever:'ለዘላለም ሰርዝ', confirmDeleteForever:'ይህን ለዘላለም መሰረዝ ይፈልጋሉ? ከዚህ በኋላ መመለስ አይቻልም።'
+      noDeletedProjects:'የተሰረዘ ፕሮጀክት የለም።', deleteForever:'ለዘላለም ሰርዝ', confirmDeleteForever:'ይህን ለዘላለም መሰረዝ ይፈልጋሉ? ከዚህ በኋላ መመለስ አይቻልም።',
+      attachments:'አባሪዎች', attachmentsSub:'ለዚህ ግቤት ደረሰኞች፣ ስክሪንሾቶች ወይም ፒዲኤፎች።', uploadFile:'ፋይል ስቀል',
+      noAttachmentsYet:'እስካሁን የተያያዘ ፋይል የለም።', uploading:'በመስቀል ላይ…', confirmDeleteAttachment:'ይህን ፋይል ሰርዝ?',
+      fileTooBig:'ፋይሉ በጣም ትልቅ ነው (ከፍተኛ 15MB)።', uploadError:'ፋይሉን መስቀል አልተቻለም — እባክዎ እንደገና ይሞክሩ።'
     }
   };
 
@@ -317,7 +323,8 @@
     projects: [], openBuyerId: null, modal: null, renameTargetId: null, entryType: 'expense',
     loaded: false, session: null, role: null, roleLoaded: false, projectAccess: 'all',
     moneyHidden: true, authEmail: '', authPassword: '', authMsg: null, authBusy: false,
-    trash: {buyers:[], costRevenue:[]}, deletedProjects: [], deletedProjectsLoaded: false
+    trash: {buyers:[], costRevenue:[]}, deletedProjects: [], deletedProjectsLoaded: false,
+    attachmentsEntryId: null, attachmentsProjectId: null, attachmentsList: null, attachmentsUploading: false
   };
   function isAdmin(){ return state.role === 'admin'; }
 
@@ -384,6 +391,77 @@
   async function fetchDeletedProjects(){
     var res = await sb.from('projects').select('*').not('deleted_at','is',null).order('deleted_at',{ascending:false});
     state.deletedProjects = res.data || [];
+  }
+
+  var MAX_ATTACHMENT_BYTES = 15 * 1024 * 1024;
+
+  async function fetchAttachments(costRevenueId){
+    var res = await sb.from('cost_revenue_attachments').select('*').eq('cost_revenue_id', costRevenueId).order('uploaded_at',{ascending:false});
+    return res.data || [];
+  }
+
+  async function uploadAttachment(file, projectId, costRevenueId){
+    if(file.size > MAX_ATTACHMENT_BYTES){ alert(t('fileTooBig')); return false; }
+    state.attachmentsUploading = true; render();
+    var safeName = file.name.replace(/[^\w.\-]+/g,'_');
+    var path = projectId+'/'+costRevenueId+'/'+Date.now()+'_'+safeName;
+    var up = await sb.storage.from('receipts').upload(path, file);
+    if(up.error){ state.attachmentsUploading = false; alert(t('uploadError')); render(); return false; }
+    var ins = await sb.from('cost_revenue_attachments').insert({cost_revenue_id:costRevenueId, project_id:projectId, file_path:path, file_name:file.name});
+    state.attachmentsUploading = false;
+    if(ins.error){ alert(t('uploadError')); render(); return false; }
+    state.attachmentsList = await fetchAttachments(costRevenueId);
+    render();
+    return true;
+  }
+
+  async function openAttachment(filePath){
+    var res = await sb.storage.from('receipts').createSignedUrl(filePath, 60);
+    if(res.data && res.data.signedUrl){ window.open(res.data.signedUrl, '_blank'); }
+    else { alert(t('uploadError')); }
+  }
+
+  async function deleteAttachment(row){
+    if(!confirm(t('confirmDeleteAttachment'))) return;
+    await sb.storage.from('receipts').remove([row.file_path]);
+    await sb.from('cost_revenue_attachments').delete().eq('id', row.id);
+    state.attachmentsList = await fetchAttachments(row.cost_revenue_id);
+    render();
+  }
+
+  function renderAttachmentsModal(){
+    var close = function(){ state.modal=null; state.attachmentsList=null; render(); };
+    var m = el('div',{class:'modal'});
+    m.appendChild(el('div',{class:'drawer-head'},[el('h2',{style:'margin:0;font-size:18px;'},[t('attachments')]), el('span',{class:'close-x', onclick:close},['×'])]));
+    m.appendChild(el('div',{class:'hint', style:'margin-top:0;'},[t('attachmentsSub')]));
+
+    if(isAdmin()){
+      var fileInput = el('input',{type:'file', accept:'image/*,application/pdf', style:'width:100%;margin-bottom:10px;'});
+      m.appendChild(fileInput);
+      m.appendChild(el('button',{class:'btn btn-primary', style:'width:100%;margin-bottom:16px;', disabled: state.attachmentsUploading?'true':null, onclick:function(){
+        if(!fileInput.files || !fileInput.files[0]) return;
+        uploadAttachment(fileInput.files[0], state.attachmentsProjectId, state.attachmentsEntryId);
+      }},[state.attachmentsUploading ? t('uploading') : t('uploadFile')]));
+    }
+
+    if(state.attachmentsList === null){
+      m.appendChild(el('div',{class:'empty'},[t('loading')]));
+    } else if(state.attachmentsList.length === 0){
+      m.appendChild(el('div',{class:'empty'},[t('noAttachmentsYet')]));
+    } else {
+      state.attachmentsList.forEach(function(row){
+        var item = el('div',{class:'pay-item'});
+        var left = el('div',{style:'cursor:pointer;', onclick:function(){ openAttachment(row.file_path); }});
+        left.appendChild(el('div',{style:'color:var(--accent);text-decoration:underline;'},[row.file_name]));
+        left.appendChild(el('div',{class:'d'},[new Date(row.uploaded_at).toLocaleString()]));
+        item.appendChild(left);
+        if(isAdmin()){
+          item.appendChild(el('span',{class:'close-x', title:'Delete', onclick:function(){ deleteAttachment(row); }},['×']));
+        }
+        m.appendChild(item);
+      });
+    }
+    return overlayWrap('modal', m, close);
   }
 
   function activeProject(){ return state.projects.find(function(p){ return p.id===state.activeProjectId; }); }
@@ -572,6 +650,7 @@
     if(isAdmin() && state.modal==='addEntry') root.appendChild(renderAddEntryModal());
     if(isAdmin() && state.modal==='addProject') root.appendChild(renderProjectFormModal(null));
     if(isAdmin() && state.modal==='renameProject') root.appendChild(renderProjectFormModal(state.renameTargetId));
+    if(state.modal==='attachments') root.appendChild(renderAttachmentsModal());
   }
 
   function renderNoAccessScreen(){
@@ -935,6 +1014,11 @@
       var mid = el('div'); mid.appendChild(el('div',{style:'font-weight:600;font-size:13.5px;line-height:1.4;'},[x.description||'—'])); row.appendChild(mid);
       row.appendChild(el('span',{class:'cat'+(isInc?' income':'')},[x.category||'Other']));
       row.appendChild(el('div',{class:'amt'+(isInc?' income':'')},[(isInc?'+ ':'− ')+fmt(x.amount)+' ETB']));
+      row.appendChild(el('span',{class:'icon-btn', title:t('attachments'), style:'font-size:14px;', onclick:function(){
+        state.modal='attachments'; state.attachmentsEntryId=x.id; state.attachmentsProjectId=proj.id; state.attachmentsList=null;
+        render();
+        fetchAttachments(x.id).then(function(list){ state.attachmentsList=list; render(); });
+      }},['\uD83D\uDCCE']));
       if(isAdmin()){
         row.appendChild(el('span',{class:'close-x', title:'Delete', onclick:function(){
           if(confirm(t('confirmDeleteEntry'))){ sb.from('cost_revenue').update({deleted_at: new Date().toISOString()}).eq('id', x.id).then(function(){ refreshAndRender(); }); }
