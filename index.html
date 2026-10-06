@@ -195,9 +195,9 @@
      1) FILL THESE IN after you create your Supabase project:
         Settings -> API -> Project URL, and the "anon public" key.
      ======================================================================= */
-  var SUPABASE_URL = 'https://bjwdakhbwsmgunorlewq.supabase.co';
+ var SUPABASE_URL = 'https://bjwdakhbwsmgunorlewq.supabase.co';
    var SUPABASE_ANON_KEY = 'sb_publishable_0vwna_W524FjQ9zT5C7phg_3mN7LLyK';
-   
+
   var MAX_PROJECTS = 10;
   var MONTHLY_STANDARD = 50000;
   var CONFIGURED = SUPABASE_URL.indexOf('YOUR_SUPABASE') === -1 && SUPABASE_ANON_KEY.indexOf('YOUR_SUPABASE') === -1;
@@ -258,7 +258,15 @@
       noDeletedProjects:'No deleted projects.', deleteForever:'Delete Forever', confirmDeleteForever:'Permanently delete this? There is no undo after this.',
       attachments:'Attachments', attachmentsSub:'Receipts, screenshots, or PDFs for this entry.', uploadFile:'Upload File',
       noAttachmentsYet:'No files attached yet.', uploading:'Uploading…', confirmDeleteAttachment:'Delete this file?',
-      fileTooBig:'That file is too large (max 15MB).', uploadError:'Could not upload that file — please try again.'
+      fileTooBig:'That file is too large (max 15MB).', uploadError:'Could not upload that file — please try again.',
+      appLock:'App Lock', appLockSub:'Require Face ID, fingerprint, or a PIN every time this app is opened on this device — on top of your account password.',
+      setupBiometric:'Set up Face ID / Fingerprint', setupPin:'Set up a PIN instead', turnOffAppLock:'Turn off App Lock',
+      appLockOn:'App Lock is ON for this device.', appLockOff:'App Lock is currently off.',
+      locked:'App Locked', unlockWithBiometricBtn:'Unlock with Face ID / Fingerprint', enterPin:'Enter your PIN',
+      unlockBtn:'Unlock', wrongPin:'Incorrect PIN.', biometricNotSupported:'Face ID / fingerprint isn\u2019t supported on this browser or device. Try the PIN option instead.',
+      biometricSetupFailed:'Could not set up biometric lock on this device.', pinTooShort:'PIN must be at least 4 digits.',
+      setPinPrompt:'Choose a PIN (4+ digits):', confirmPinPrompt:'Enter the same PIN again:', pinMismatch:'PINs didn\u2019t match — try again.',
+      appLockNote:'This is a local-device convenience lock, not a replacement for your account password — it only protects against someone picking up this already-unlocked device.'
     },
     am: {
       brand:'Mesken Real Estate', brandline:'መስከን ሪል እስቴት',
@@ -314,7 +322,15 @@
       noDeletedProjects:'የተሰረዘ ፕሮጀክት የለም።', deleteForever:'ለዘላለም ሰርዝ', confirmDeleteForever:'ይህን ለዘላለም መሰረዝ ይፈልጋሉ? ከዚህ በኋላ መመለስ አይቻልም።',
       attachments:'አባሪዎች', attachmentsSub:'ለዚህ ግቤት ደረሰኞች፣ ስክሪንሾቶች ወይም ፒዲኤፎች።', uploadFile:'ፋይል ስቀል',
       noAttachmentsYet:'እስካሁን የተያያዘ ፋይል የለም።', uploading:'በመስቀል ላይ…', confirmDeleteAttachment:'ይህን ፋይል ሰርዝ?',
-      fileTooBig:'ፋይሉ በጣም ትልቅ ነው (ከፍተኛ 15MB)።', uploadError:'ፋይሉን መስቀል አልተቻለም — እባክዎ እንደገና ይሞክሩ።'
+      fileTooBig:'ፋይሉ በጣም ትልቅ ነው (ከፍተኛ 15MB)።', uploadError:'ፋይሉን መስቀል አልተቻለም — እባክዎ እንደገና ይሞክሩ።',
+      appLock:'የመተግበሪያ ቁልፍ', appLockSub:'ይህ መተግበሪያ በዚህ መሳሪያ ላይ በተከፈተ ቁጥር Face ID፣ ጣት አሻራ ወይም ፒን እንዲጠየቅ ያድርጉ — ከመለያ የይለፍ ቃልዎ በተጨማሪ።',
+      setupBiometric:'Face ID / ጣት አሻራ ያዘጋጁ', setupPin:'ፒን ይጠቀሙ', turnOffAppLock:'የመተግበሪያ ቁልፍ አጥፋ',
+      appLockOn:'የመተግበሪያ ቁልፍ በዚህ መሳሪያ ላይ በርቷል።', appLockOff:'የመተግበሪያ ቁልፍ አሁን ጠፍቷል።',
+      locked:'መተግበሪያው ተቆልፏል', unlockWithBiometricBtn:'በFace ID / ጣት አሻራ ይክፈቱ', enterPin:'ፒንዎን ያስገቡ',
+      unlockBtn:'ክፈት', wrongPin:'የተሳሳተ ፒን።', biometricNotSupported:'Face ID / ጣት አሻራ በዚህ መሳሪያ ወይም አሳሽ አይደገፍም። በምትኩ ፒን ይሞክሩ።',
+      biometricSetupFailed:'በዚህ መሳሪያ ላይ የባዮሜትሪክ ቁልፍ ማዘጋጀት አልተቻለም።', pinTooShort:'ፒን ቢያንስ 4 ዲጂት ሊኖረው ይገባል።',
+      setPinPrompt:'ፒን ይምረጡ (ቢያንስ 4 ዲጂት):', confirmPinPrompt:'ተመሳሳዩን ፒን እንደገና ያስገቡ:', pinMismatch:'ፒኖቹ አልተዛመዱም — እንደገና ይሞክሩ።',
+      appLockNote:'ይህ የአካባቢ-መሳሪያ ምቹነት ቁልፍ ነው እንጂ የመለያ የይለፍ ቃልዎን አይተካም — የሚጠብቀው ይህን መሳሪያ ቀድሞ የከፈተ ሰው እንዳያገኝ ብቻ ነው።'
     }
   };
 
@@ -624,6 +640,13 @@
 
     if(!state.session){ root.appendChild(renderAuthScreen()); return; }
 
+    var hasLock = !!(localStorage.getItem('mesken_applock_cred') || localStorage.getItem('mesken_applock_pin'));
+    if(hasLock && sessionStorage.getItem('mesken_applock_unlocked') !== '1'){
+      root.appendChild(renderBrandHeader());
+      root.appendChild(renderAppLockScreen());
+      return;
+    }
+
     if(!state.roleLoaded){
       root.appendChild(renderBrandHeader());
       root.appendChild(el('div',{class:'empty'},[t('loading')]));
@@ -651,6 +674,7 @@
     if(isAdmin() && state.modal==='addProject') root.appendChild(renderProjectFormModal(null));
     if(isAdmin() && state.modal==='renameProject') root.appendChild(renderProjectFormModal(state.renameTargetId));
     if(state.modal==='attachments') root.appendChild(renderAttachmentsModal());
+    if(state.modal==='appLockSettings') root.appendChild(renderAppLockSettingsModal());
   }
 
   function renderNoAccessScreen(){
@@ -701,6 +725,106 @@
     await loadAppData();
   }
 
+  /* ---------------- App Lock (local device convenience lock) ---------------- */
+  function b64FromBuf(buf){ return btoa(String.fromCharCode.apply(null, new Uint8Array(buf))); }
+  function bufFromB64(b64){ var bin = atob(b64); var arr = new Uint8Array(bin.length); for(var i=0;i<bin.length;i++) arr[i]=bin.charCodeAt(i); return arr; }
+
+  async function registerBiometric(){
+    if(!window.PublicKeyCredential){ alert(t('biometricNotSupported')); return; }
+    try{
+      var challenge = crypto.getRandomValues(new Uint8Array(32));
+      var userId = crypto.getRandomValues(new Uint8Array(16));
+      var cred = await navigator.credentials.create({
+        publicKey: {
+          challenge: challenge,
+          rp: { name: 'Mesken Real Estate' },
+          user: { id: userId, name: state.session.user.email, displayName: state.session.user.email },
+          pubKeyCredParams: [{alg:-7, type:'public-key'},{alg:-257, type:'public-key'}],
+          authenticatorSelection: { authenticatorAttachment: 'platform', userVerification: 'required' },
+          timeout: 60000
+        }
+      });
+      localStorage.setItem('mesken_applock_cred', b64FromBuf(cred.rawId));
+      sessionStorage.setItem('mesken_applock_unlocked', '1');
+      state.modal = null;
+      render();
+    }catch(e){ alert(t('biometricSetupFailed')); }
+  }
+
+  async function unlockWithBiometric(){
+    var idB64 = localStorage.getItem('mesken_applock_cred');
+    if(!idB64) return;
+    try{
+      var assertion = await navigator.credentials.get({
+        publicKey: {
+          challenge: crypto.getRandomValues(new Uint8Array(32)),
+          allowCredentials: [{ id: bufFromB64(idB64), type: 'public-key' }],
+          userVerification: 'required',
+          timeout: 60000
+        }
+      });
+      if(assertion){ sessionStorage.setItem('mesken_applock_unlocked', '1'); render(); }
+    }catch(e){ /* user cancelled or failed — stay locked */ }
+  }
+
+  function setupPinFlow(){
+    var p1 = prompt(t('setPinPrompt'));
+    if(p1 === null) return;
+    if(!/^[0-9]{4,}$/.test(p1)){ alert(t('pinTooShort')); return; }
+    var p2 = prompt(t('confirmPinPrompt'));
+    if(p2 === null) return;
+    if(p1 !== p2){ alert(t('pinMismatch')); return; }
+    localStorage.setItem('mesken_applock_pin', p1);
+    sessionStorage.setItem('mesken_applock_unlocked', '1');
+    state.modal = null;
+    render();
+  }
+
+  function turnOffAppLock(){
+    localStorage.removeItem('mesken_applock_cred');
+    localStorage.removeItem('mesken_applock_pin');
+    sessionStorage.removeItem('mesken_applock_unlocked');
+    state.modal = null;
+    render();
+  }
+
+  function renderAppLockScreen(){
+    var hasCred = !!localStorage.getItem('mesken_applock_cred');
+    var hasPin = !!localStorage.getItem('mesken_applock_pin');
+    var box = el('div',{class:'auth-wrap'});
+    box.appendChild(el('div',{class:'brand-mark', style:'margin:0 auto;'}));
+    box.appendChild(el('h2',{},['\uD83D\uDD12 '+t('locked')]));
+    if(hasCred){
+      box.appendChild(el('button',{class:'btn btn-primary', style:'width:100%;margin-bottom:10px;', onclick:unlockWithBiometric},[t('unlockWithBiometricBtn')]));
+    }
+    if(hasPin){
+      var pinInput = el('input',{type:'password', inputmode:'numeric', placeholder:t('enterPin'), style:'text-align:center;'});
+      box.appendChild(pinInput);
+      box.appendChild(el('button',{class:'btn btn-ghost', style:'width:100%;margin-top:10px;', onclick:function(){
+        if(pinInput.value === localStorage.getItem('mesken_applock_pin')){ sessionStorage.setItem('mesken_applock_unlocked','1'); render(); }
+        else { alert(t('wrongPin')); }
+      }},[t('unlockBtn')]));
+    }
+    return box;
+  }
+
+  function renderAppLockSettingsModal(){
+    var close = function(){ state.modal=null; render(); };
+    var hasCred = !!localStorage.getItem('mesken_applock_cred');
+    var hasPin = !!localStorage.getItem('mesken_applock_pin');
+    var m = el('div',{class:'modal'});
+    m.appendChild(el('div',{class:'drawer-head'},[el('h2',{style:'margin:0;font-size:18px;'},['\uD83D\uDD12 '+t('appLock')]), el('span',{class:'close-x', onclick:close},['×'])]));
+    m.appendChild(el('div',{class:'hint', style:'margin-top:0;'},[t('appLockSub')]));
+    m.appendChild(el('div',{class:'exp-toolbar-extra', style:'margin-bottom:14px;'},[(hasCred||hasPin) ? t('appLockOn') : t('appLockOff')]));
+    m.appendChild(el('button',{class:'btn btn-primary', style:'width:100%;margin-bottom:10px;', onclick:registerBiometric},[t('setupBiometric')]));
+    m.appendChild(el('button',{class:'btn btn-ghost', style:'width:100%;margin-bottom:10px;', onclick:setupPinFlow},[t('setupPin')]));
+    if(hasCred || hasPin){
+      m.appendChild(el('button',{class:'btn btn-danger', style:'width:100%;margin-bottom:10px;', onclick:turnOffAppLock},[t('turnOffAppLock')]));
+    }
+    m.appendChild(el('div',{class:'hint', style:'margin-top:6px;'},[t('appLockNote')]));
+    return overlayWrap('modal', m, close);
+  }
+
   function renderBrandHeader(){
     var wrapAll = el('div');
     var top = el('div',{class:'topbar'});
@@ -721,6 +845,7 @@
         try{ localStorage.setItem('mesken_money_hidden', state.moneyHidden ? '1' : '0'); }catch(e){}
         render();
       }},[ el('span',{},[state.moneyHidden ? '\uD83D\uDC41\u200D\uD83D\uDDE8 ' + t('showMoney') : '\uD83D\uDC41 ' + t('hideMoney')]) ]));
+      toggles.appendChild(el('div',{class:'toggle', title:t('appLock'), onclick:function(){ state.modal='appLockSettings'; render(); }},[ el('span',{},['\uD83D\uDD12 '+t('appLock')]) ]));
       toggles.appendChild(el('button',{class:'btn btn-ghost btn-sm', onclick:function(){ teardownRealtime(); sb.auth.signOut(); state.loaded=false; state.projects=[]; state.role=null; state.roleLoaded=false; }},[t('signOut')]));
     }
     top.appendChild(toggles);
