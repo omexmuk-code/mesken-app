@@ -195,7 +195,7 @@
      1) FILL THESE IN after you create your Supabase project:
         Settings -> API -> Project URL, and the "anon public" key.
      ======================================================================= */
- var SUPABASE_URL = 'https://bjwdakhbwsmgunorlewq.supabase.co';
+  var SUPABASE_URL = 'https://bjwdakhbwsmgunorlewq.supabase.co';
    var SUPABASE_ANON_KEY = 'sb_publishable_0vwna_W524FjQ9zT5C7phg_3mN7LLyK';
 
   var MAX_PROJECTS = 10;
@@ -257,7 +257,7 @@
       deletedEntries:'Deleted cost/revenue entries', deletedOn:'Deleted', deletedProjects:'Recently deleted projects',
       noDeletedProjects:'No deleted projects.', deleteForever:'Delete Forever', confirmDeleteForever:'Permanently delete this? There is no undo after this.',
       attachments:'Attachments', attachmentsSub:'Receipts, screenshots, or PDFs for this entry.', uploadFile:'Upload File',
-      noAttachmentsYet:'No files attached yet.', uploading:'Uploading…', confirmDeleteAttachment:'Delete this file?',
+      noAttachmentsYet:'No files attached yet.', uploading:'Uploading…', confirmDeleteAttachment:'Delete this file?', noFileSelected:'No file selected yet — tap above to choose one.',
       fileTooBig:'That file is too large (max 15MB).', uploadError:'Could not upload that file — please try again.',
       appLock:'App Lock', appLockSub:'Require Face ID, fingerprint, or a PIN every time this app is opened on this device — on top of your account password.',
       setupBiometric:'Set up Face ID / Fingerprint', setupPin:'Set up a PIN instead', turnOffAppLock:'Turn off App Lock',
@@ -321,7 +321,7 @@
       deletedEntries:'የተሰረዙ የወጪ/ገቢ ግቤቶች', deletedOn:'የተሰረዘበት', deletedProjects:'በቅርቡ የተሰረዙ ፕሮጀክቶች',
       noDeletedProjects:'የተሰረዘ ፕሮጀክት የለም።', deleteForever:'ለዘላለም ሰርዝ', confirmDeleteForever:'ይህን ለዘላለም መሰረዝ ይፈልጋሉ? ከዚህ በኋላ መመለስ አይቻልም።',
       attachments:'አባሪዎች', attachmentsSub:'ለዚህ ግቤት ደረሰኞች፣ ስክሪንሾቶች ወይም ፒዲኤፎች።', uploadFile:'ፋይል ስቀል',
-      noAttachmentsYet:'እስካሁን የተያያዘ ፋይል የለም።', uploading:'በመስቀል ላይ…', confirmDeleteAttachment:'ይህን ፋይል ሰርዝ?',
+      noAttachmentsYet:'እስካሁን የተያያዘ ፋይል የለም።', uploading:'በመስቀል ላይ…', confirmDeleteAttachment:'ይህን ፋይል ሰርዝ?', noFileSelected:'እስካሁን ፋይል አልተመረጠም — ከላይ ነክተው ይምረጡ።',
       fileTooBig:'ፋይሉ በጣም ትልቅ ነው (ከፍተኛ 15MB)።', uploadError:'ፋይሉን መስቀል አልተቻለም — እባክዎ እንደገና ይሞክሩ።',
       appLock:'የመተግበሪያ ቁልፍ', appLockSub:'ይህ መተግበሪያ በዚህ መሳሪያ ላይ በተከፈተ ቁጥር Face ID፣ ጣት አሻራ ወይም ፒን እንዲጠየቅ ያድርጉ — ከመለያ የይለፍ ቃልዎ በተጨማሪ።',
       setupBiometric:'Face ID / ጣት አሻራ ያዘጋጁ', setupPin:'ፒን ይጠቀሙ', turnOffAppLock:'የመተግበሪያ ቁልፍ አጥፋ',
@@ -417,18 +417,26 @@
   }
 
   async function uploadAttachment(file, projectId, costRevenueId){
+    if(!file || !file.size){ alert(t('noFileSelected')); return false; }
     if(file.size > MAX_ATTACHMENT_BYTES){ alert(t('fileTooBig')); return false; }
     state.attachmentsUploading = true; render();
-    var safeName = file.name.replace(/[^\w.\-]+/g,'_');
-    var path = projectId+'/'+costRevenueId+'/'+Date.now()+'_'+safeName;
-    var up = await sb.storage.from('receipts').upload(path, file);
-    if(up.error){ state.attachmentsUploading = false; alert(t('uploadError')); render(); return false; }
-    var ins = await sb.from('cost_revenue_attachments').insert({cost_revenue_id:costRevenueId, project_id:projectId, file_path:path, file_name:file.name});
-    state.attachmentsUploading = false;
-    if(ins.error){ alert(t('uploadError')); render(); return false; }
-    state.attachmentsList = await fetchAttachments(costRevenueId);
-    render();
-    return true;
+    try{
+      var safeName = file.name.replace(/[^\w.\-]+/g,'_');
+      var path = projectId+'/'+costRevenueId+'/'+Date.now()+'_'+safeName;
+      var up = await sb.storage.from('receipts').upload(path, file, { contentType: file.type || 'application/octet-stream' });
+      if(up.error){ state.attachmentsUploading = false; alert(t('uploadError')+'\n\n('+up.error.message+')'); render(); return false; }
+      var ins = await sb.from('cost_revenue_attachments').insert({cost_revenue_id:costRevenueId, project_id:projectId, file_path:path, file_name:file.name});
+      state.attachmentsUploading = false;
+      if(ins.error){ alert(t('uploadError')+'\n\n('+ins.error.message+')'); render(); return false; }
+      state.attachmentsList = await fetchAttachments(costRevenueId);
+      render();
+      return true;
+    }catch(e){
+      state.attachmentsUploading = false;
+      alert(t('uploadError')+'\n\n('+(e && e.message ? e.message : e)+')');
+      render();
+      return false;
+    }
   }
 
   async function openAttachment(filePath){
@@ -452,10 +460,15 @@
     m.appendChild(el('div',{class:'hint', style:'margin-top:0;'},[t('attachmentsSub')]));
 
     if(isAdmin()){
-      var fileInput = el('input',{type:'file', accept:'image/*,application/pdf', style:'width:100%;margin-bottom:10px;'});
+      var selectedLabel = el('div',{class:'hint', style:'margin-top:0;'},[t('noFileSelected')]);
+      var fileInput = el('input',{type:'file', accept:'image/*,application/pdf', style:'width:100%;margin-bottom:6px;', onchange:function(e){
+        var f = e.target.files && e.target.files[0];
+        selectedLabel.textContent = f ? (f.name+' — '+Math.round(f.size/1024)+' KB') : t('noFileSelected');
+      }});
       m.appendChild(fileInput);
-      m.appendChild(el('button',{class:'btn btn-primary', style:'width:100%;margin-bottom:16px;', disabled: state.attachmentsUploading?'true':null, onclick:function(){
-        if(!fileInput.files || !fileInput.files[0]) return;
+      m.appendChild(selectedLabel);
+      m.appendChild(el('button',{class:'btn btn-primary', style:'width:100%;margin-top:6px;margin-bottom:16px;', disabled: state.attachmentsUploading?'true':null, onclick:function(){
+        if(!fileInput.files || !fileInput.files[0]){ alert(t('noFileSelected')); return; }
         uploadAttachment(fileInput.files[0], state.attachmentsProjectId, state.attachmentsEntryId);
       }},[state.attachmentsUploading ? t('uploading') : t('uploadFile')]));
     }
