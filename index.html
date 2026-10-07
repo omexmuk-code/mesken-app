@@ -195,7 +195,7 @@
      1) FILL THESE IN after you create your Supabase project:
         Settings -> API -> Project URL, and the "anon public" key.
      ======================================================================= */
- var SUPABASE_URL = 'https://bjwdakhbwsmgunorlewq.supabase.co';
+  var SUPABASE_URL = 'https://bjwdakhbwsmgunorlewq.supabase.co';
    var SUPABASE_ANON_KEY = 'sb_publishable_0vwna_W524FjQ9zT5C7phg_3mN7LLyK';
 
   var MAX_PROJECTS = 10;
@@ -340,7 +340,7 @@
     loaded: false, session: null, role: null, roleLoaded: false, projectAccess: 'all',
     moneyHidden: true, authEmail: '', authPassword: '', authMsg: null, authBusy: false,
     trash: {buyers:[], costRevenue:[]}, deletedProjects: [], deletedProjectsLoaded: false,
-    attachmentsEntryId: null, attachmentsProjectId: null, attachmentsList: null, attachmentsUploading: false
+    attachmentsEntryId: null, attachmentsProjectId: null, attachmentsList: null, attachmentsUploading: false, pendingAttachmentFile: null
   };
   function isAdmin(){ return state.role === 'admin'; }
 
@@ -429,6 +429,7 @@
       state.attachmentsUploading = false;
       if(ins.error){ alert(t('uploadError')+'\n\n('+ins.error.message+')'); render(); return false; }
       state.attachmentsList = await fetchAttachments(costRevenueId);
+      state.pendingAttachmentFile = null;
       render();
       return true;
     }catch(e){
@@ -454,22 +455,22 @@
   }
 
   function renderAttachmentsModal(){
-    var close = function(){ state.modal=null; state.attachmentsList=null; render(); };
+    var close = function(){ state.modal=null; state.attachmentsList=null; state.pendingAttachmentFile=null; render(); };
     var m = el('div',{class:'modal'});
     m.appendChild(el('div',{class:'drawer-head'},[el('h2',{style:'margin:0;font-size:18px;'},[t('attachments')]), el('span',{class:'close-x', onclick:close},['×'])]));
     m.appendChild(el('div',{class:'hint', style:'margin-top:0;'},[t('attachmentsSub')]));
 
     if(isAdmin()){
-      var selectedLabel = el('div',{class:'hint', style:'margin-top:0;'},[t('noFileSelected')]);
       var fileInput = el('input',{type:'file', accept:'image/*,application/pdf', style:'width:100%;margin-bottom:6px;', onchange:function(e){
-        var f = e.target.files && e.target.files[0];
-        selectedLabel.textContent = f ? (f.name+' — '+Math.round(f.size/1024)+' KB') : t('noFileSelected');
+        state.pendingAttachmentFile = (e.target.files && e.target.files[0]) ? e.target.files[0] : null;
+        render();
       }});
       m.appendChild(fileInput);
-      m.appendChild(selectedLabel);
+      var pf = state.pendingAttachmentFile;
+      m.appendChild(el('div',{class:'hint', style:'margin-top:0;'},[pf ? (pf.name+' — '+Math.round(pf.size/1024)+' KB') : t('noFileSelected')]));
       m.appendChild(el('button',{class:'btn btn-primary', style:'width:100%;margin-top:6px;margin-bottom:16px;', disabled: state.attachmentsUploading?'true':null, onclick:function(){
-        if(!fileInput.files || !fileInput.files[0]){ alert(t('noFileSelected')); return; }
-        uploadAttachment(fileInput.files[0], state.attachmentsProjectId, state.attachmentsEntryId);
+        if(!state.pendingAttachmentFile){ alert(t('noFileSelected')); return; }
+        uploadAttachment(state.pendingAttachmentFile, state.attachmentsProjectId, state.attachmentsEntryId);
       }},[state.attachmentsUploading ? t('uploading') : t('uploadFile')]));
     }
 
@@ -1153,7 +1154,7 @@
       row.appendChild(el('span',{class:'cat'+(isInc?' income':'')},[x.category||'Other']));
       row.appendChild(el('div',{class:'amt'+(isInc?' income':'')},[(isInc?'+ ':'− ')+fmt(x.amount)+' ETB']));
       row.appendChild(el('span',{class:'icon-btn', title:t('attachments'), style:'font-size:14px;', onclick:function(){
-        state.modal='attachments'; state.attachmentsEntryId=x.id; state.attachmentsProjectId=proj.id; state.attachmentsList=null;
+        state.modal='attachments'; state.attachmentsEntryId=x.id; state.attachmentsProjectId=proj.id; state.attachmentsList=null; state.pendingAttachmentFile=null;
         render();
         fetchAttachments(x.id).then(function(list){ state.attachmentsList=list; render(); });
       }},['\uD83D\uDCCE']));
