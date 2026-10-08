@@ -340,7 +340,8 @@
     loaded: false, session: null, role: null, roleLoaded: false, projectAccess: 'all',
     moneyHidden: true, authEmail: '', authPassword: '', authMsg: null, authBusy: false,
     trash: {buyers:[], costRevenue:[]}, deletedProjects: [], deletedProjectsLoaded: false,
-    attachmentsEntryId: null, attachmentsProjectId: null, attachmentsList: null, attachmentsUploading: false, pendingAttachmentFile: null
+    attachmentsEntryId: null, attachmentsProjectId: null, attachmentsList: null, attachmentsUploading: false, pendingAttachmentFile: null,
+    formBusy: false
   };
   function isAdmin(){ return state.role === 'admin'; }
 
@@ -643,7 +644,36 @@
   }
 
   /* ---------------- render root ---------------- */
+  /* ---------------- Back-button handling (phone back gesture / browser back) ----------------
+     The app is one page, so the phone has no "history" to go back through unless we create it.
+     We keep ONE spare history entry whenever something is open (a project, a form, a drawer).
+     Pressing back then closes the top-most layer instead of leaving the app. */
+  var historyArmed = false;
+  function appIsAtRoot(){ return !state.modal && !state.openBuyerId && state.view === 'projects'; }
+  function syncHistory(){
+    var deep = !appIsAtRoot();
+    if(deep && !historyArmed){
+      try{ history.pushState({mesken:1}, ''); historyArmed = true; }catch(e){}
+    } else if(!deep && historyArmed){
+      historyArmed = false;
+      try{ history.back(); }catch(e){}
+    }
+  }
+  window.addEventListener('popstate', function(){
+    if(!historyArmed) return;
+    historyArmed = false;
+    if(state.modal){ state.modal = null; state.attachmentsList = null; state.pendingAttachmentFile = null; state.renameTargetId = null; }
+    else if(state.openBuyerId){ state.openBuyerId = null; }
+    else if(state.view === 'project'){ state.view = 'projects'; }
+    render();
+  });
+
   function render(){
+    renderInner();
+    syncHistory();
+  }
+
+  function renderInner(){
     var appEl = document.getElementById('app');
     appEl.setAttribute('data-theme', state.theme);
     document.documentElement.setAttribute('lang', state.lang);
@@ -1119,9 +1149,13 @@
       row.appendChild(left);
       var right = el('div',{class:'tr-right'});
       if(isAdmin()){
-        right.appendChild(el('button',{class:'btn btn-primary btn-sm', onclick:function(){
+        right.appendChild(el('button',{class:'btn btn-primary btn-sm', disabled: state.formBusy?'true':null, onclick:function(){
+          if(state.formBusy) return;
+          state.formBusy = true; render();
           sb.from('payments').insert({buyer_id:b.id, date:todayStrDMY(), amount:MONTHLY_STANDARD, note:'Monthly payment'}).then(function(res){
-            if(res.error){ alert(t('saveError')); return; } refreshAndRender();
+            state.formBusy = false;
+            if(res.error){ alert(t('saveError')); render(); return; }
+            refreshAndRender();
           });
         }},[t('logStandard')]));
       }
@@ -1216,11 +1250,15 @@
       drawer.appendChild(el('div',{class:'field'},[el('label',{},[t('amount')]), amtInput]));
       drawer.appendChild(el('div',{class:'field'},[el('label',{},[t('date')]), dateInput]));
       drawer.appendChild(el('div',{class:'field'},[el('label',{},[t('note')]), noteInput]));
-      drawer.appendChild(el('button',{class:'btn btn-primary', style:'width:100%;', onclick:function(){
+      drawer.appendChild(el('button',{class:'btn btn-primary', style:'width:100%;', disabled: state.formBusy?'true':null, onclick:function(){
+        if(state.formBusy) return;
         var amt = parseFloat(amtInput.value);
         if(!amt||amt<=0){ alert(t('enterValidAmount')); return; }
+        state.formBusy = true; render();
         sb.from('payments').insert({buyer_id:b.id, date:dateInput.value||todayStrDMY(), amount:amt, note:noteInput.value}).then(function(res){
-          if(res.error){ alert(t('saveError')); return; } refreshAndRender();
+          state.formBusy = false;
+          if(res.error){ alert(t('saveError')); render(); return; }
+          refreshAndRender();
         });
       }},[t('addPayment')]));
 
@@ -1266,16 +1304,18 @@
     m.appendChild(el('div',{class:'field'},[el('label',{},[t('notes')]), notes]));
     var actions = el('div',{class:'form-actions'});
     actions.appendChild(el('button',{class:'btn btn-ghost', onclick:close},[t('cancel')]));
-    actions.appendChild(el('button',{class:'btn btn-primary', onclick:function(){
+    actions.appendChild(el('button',{class:'btn btn-primary', disabled: state.formBusy?'true':null, onclick:function(){
+      if(state.formBusy) return;
       if(!name.value.trim()){ alert(t('enterBuyerName')); return; }
       var downAmt = parseFloat(down.value)||0;
+      state.formBusy = true; render();
       sb.from('buyers').insert({
         project_id: proj.id, name: name.value.trim(), property_type: ptype.value, floor: floor.value||null,
         sale_date: date.value||todayStrDMY(), total_price: price.value?parseFloat(price.value):null, notes: notes.value||''
       }).select().single().then(function(res){
-        if(res.error || !res.data){ alert(t('saveError')); return; }
+        if(res.error || !res.data){ state.formBusy=false; alert(t('saveError')); render(); return; }
         var newId = res.data.id;
-        var after = function(){ state.modal=null; refreshAndRender(); };
+        var after = function(){ state.formBusy=false; state.modal=null; refreshAndRender(); };
         if(downAmt>0){
           sb.from('payments').insert({buyer_id:newId, date:date.value||todayStrDMY(), amount:downAmt, note:'Down payment'}).then(after);
         } else { after(); }
@@ -1301,12 +1341,18 @@
     m.appendChild(el('div',{class:'field'},[el('label',{},[t('date')]), date]));
     var actions = el('div',{class:'form-actions'});
     actions.appendChild(el('button',{class:'btn btn-ghost', onclick:close},[t('cancel')]));
-    actions.appendChild(el('button',{class:'btn btn-primary', onclick:function(){
+    actions.appendChild(el('button',{class:'btn btn-primary', disabled: state.formBusy?'true':null, onclick:function(){
+      if(state.formBusy) return;
       var a = parseFloat(amt.value);
       if(!desc.value.trim()||!a||a<=0){ alert(t('enterDescAmount')); return; }
+      state.formBusy = true; render();
       sb.from('cost_revenue').insert({
         project_id: proj.id, type: type==='income'?'Revenue':'Cost', category: cat.value, description: desc.value.trim(), amount: a, date: date.value||todayStrDMY()
-      }).then(function(res){ if(res.error){ alert(t('saveError')); return; } state.modal=null; refreshAndRender(); });
+      }).then(function(res){
+        state.formBusy = false;
+        if(res.error){ alert(t('saveError')); render(); return; }
+        state.modal=null; refreshAndRender();
+      });
     }},[t('addEntry')]));
     m.appendChild(actions);
     return overlayWrap('modal', m, close);
@@ -1322,14 +1368,19 @@
     m.appendChild(el('div',{class:'field'},[el('label',{},[t('name')]), name]));
     var actions = el('div',{class:'form-actions'});
     actions.appendChild(el('button',{class:'btn btn-ghost', onclick:close},[t('cancel')]));
-    actions.appendChild(el('button',{class:'btn btn-primary', onclick:function(){
+    actions.appendChild(el('button',{class:'btn btn-primary', disabled: state.formBusy?'true':null, onclick:function(){
+      if(state.formBusy) return;
       if(!name.value.trim()){ alert(t('enterProjectName')); return; }
-      if(isRename){
-        sb.from('projects').update({name:name.value.trim()}).eq('id', target.id).then(function(res){ if(res.error){ alert(t('saveError')); return; } state.modal=null; state.renameTargetId=null; refreshAndRender(); });
-      } else {
-        if(state.projects.length >= MAX_PROJECTS){ alert(t('maxProjects')); return; }
-        sb.from('projects').insert({name:name.value.trim()}).then(function(res){ if(res.error){ alert(t('saveError')); return; } state.modal=null; refreshAndRender(); });
-      }
+      if(!isRename && state.projects.length >= MAX_PROJECTS){ alert(t('maxProjects')); return; }
+      state.formBusy = true; render();
+      var req = isRename
+        ? sb.from('projects').update({name:name.value.trim()}).eq('id', target.id)
+        : sb.from('projects').insert({name:name.value.trim()});
+      req.then(function(res){
+        state.formBusy = false;
+        if(res.error){ alert(t('saveError')); render(); return; }
+        state.modal=null; state.renameTargetId=null; refreshAndRender();
+      });
     }},[isRename?t('save'):t('create')]));
     m.appendChild(actions);
     return overlayWrap('modal', m, close);
