@@ -182,6 +182,20 @@
   .config-warn{max-width:520px; margin:10vh auto; background:var(--warning-soft); color:var(--warning); border-radius:14px; padding:20px; font-size:13.5px; line-height:1.6;}
   .config-warn code{background:rgba(0,0,0,.08); padding:2px 6px; border-radius:5px;}
 
+
+  html,body{overflow-x:hidden;}
+  .wrap{overflow-wrap:anywhere;}
+  .pay-item > div, .exp-row > div, .tr-left, .row > div{min-width:0; overflow-wrap:anywhere; word-break:break-word;}
+  .note-card{background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:14px; margin-bottom:8px; cursor:pointer; overflow:hidden;}
+  .note-card:hover{border-color:var(--accent);}
+  .note-title{font-weight:700; font-size:15px; overflow-wrap:anywhere; word-break:break-word;}
+  .note-preview{font-size:13px; color:var(--text-muted); margin-top:4px; overflow-wrap:anywhere; word-break:break-word; white-space:pre-wrap; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;}
+  .note-card .d{font-size:11.5px; color:var(--text-muted); margin-top:6px;}
+  .note-page .d{font-size:11.5px; color:var(--text-muted);}
+  .note-title-input{width:100%; font-size:18px; font-weight:700; margin-bottom:10px;}
+  .note-body-input{width:100%; min-height:55vh; line-height:1.55; resize:vertical; margin-bottom:6px;}
+  .note-view-title{margin:0 0 12px; overflow-wrap:anywhere;}
+  .note-view-body{white-space:pre-wrap; line-height:1.6; overflow-wrap:anywhere; word-break:break-word;}
   ::selection{background:var(--accent-soft);}
 </style>
 </head>
@@ -256,6 +270,8 @@
       trashEmpty:'Nothing in the trash right now.', restore:'Restore', deletedBuyers:'Deleted buyers',
       deletedEntries:'Deleted cost/revenue entries', deletedOn:'Deleted', deletedProjects:'Recently deleted projects',
       noDeletedProjects:'No deleted projects.', deleteForever:'Delete Forever', confirmDeleteForever:'Permanently delete this? There is no undo after this.',
+      newNote:'+ New Note', notesNote:'Tap a topic to open it', noteTopicPh:'Topic (title)', noteBodyPh:'Write your note here…',
+      saveNote:'Save Note', deleteNote:'Delete Note', backToNotes:'← Notes', untitledNote:'Untitled note', noteEmpty:'Write a topic or some text first.',
       attachments:'Attachments', attachmentsSub:'Receipts, screenshots, or PDFs for this entry.', uploadFile:'Upload File',
       noAttachmentsYet:'No files attached yet.', uploading:'Uploading…', confirmDeleteAttachment:'Delete this file?', noFileSelected:'No file selected yet — tap above to choose one.',
       fileTooBig:'That file is too large (max 15MB).', uploadError:'Could not upload that file — please try again.',
@@ -320,6 +336,8 @@
       trashEmpty:'በቆሻሻ ውስጥ ምንም የለም።', restore:'መልስ', deletedBuyers:'የተሰረዙ ገዢዎች',
       deletedEntries:'የተሰረዙ የወጪ/ገቢ ግቤቶች', deletedOn:'የተሰረዘበት', deletedProjects:'በቅርቡ የተሰረዙ ፕሮጀክቶች',
       noDeletedProjects:'የተሰረዘ ፕሮጀክት የለም።', deleteForever:'ለዘላለም ሰርዝ', confirmDeleteForever:'ይህን ለዘላለም መሰረዝ ይፈልጋሉ? ከዚህ በኋላ መመለስ አይቻልም።',
+      newNote:'+ አዲስ ማስታወሻ', notesNote:'ርዕስ ነክተው ይክፈቱ', noteTopicPh:'ርዕስ', noteBodyPh:'ማስታወሻዎን እዚህ ይጻፉ…',
+      saveNote:'ማስታወሻ አስቀምጥ', deleteNote:'ማስታወሻ ሰርዝ', backToNotes:'← ማስታወሻዎች', untitledNote:'ርዕስ የለም', noteEmpty:'መጀመሪያ ርዕስ ወይም ጽሑፍ ይጻፉ።',
       attachments:'አባሪዎች', attachmentsSub:'ለዚህ ግቤት ደረሰኞች፣ ስክሪንሾቶች ወይም ፒዲኤፎች።', uploadFile:'ፋይል ስቀል',
       noAttachmentsYet:'እስካሁን የተያያዘ ፋይል የለም።', uploading:'በመስቀል ላይ…', confirmDeleteAttachment:'ይህን ፋይል ሰርዝ?', noFileSelected:'እስካሁን ፋይል አልተመረጠም — ከላይ ነክተው ይምረጡ።',
       fileTooBig:'ፋይሉ በጣም ትልቅ ነው (ከፍተኛ 15MB)።', uploadError:'ፋይሉን መስቀል አልተቻለም — እባክዎ እንደገና ይሞክሩ።',
@@ -341,7 +359,7 @@
     moneyHidden: true, authEmail: '', authPassword: '', authMsg: null, authBusy: false,
     trash: {buyers:[], costRevenue:[]}, deletedProjects: [], deletedProjectsLoaded: false,
     attachmentsEntryId: null, attachmentsProjectId: null, attachmentsList: null, attachmentsUploading: false, pendingAttachmentFile: null,
-    formBusy: false
+    formBusy: false, openNoteId: null, noteDraft: null
   };
   function isAdmin(){ return state.role === 'admin'; }
 
@@ -351,6 +369,40 @@
     if(state.moneyHidden) return '•••••';
     return Math.round(n).toLocaleString('en-US');
   }
+  /* ---- amount inputs: live thousands commas (1,500,000) ---- */
+  function fmtInputNumber(str){
+    var cleaned = String(str===null||str===undefined?'':str).replace(/[^0-9.]/g,'');
+    var parts = cleaned.split('.');
+    var intPart = parts[0].replace(/^0+(?=\d)/,'').replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    if(parts.length>1) return intPart + '.' + parts.slice(1).join('').slice(0,2);
+    return intPart;
+  }
+  function parseNum(str){
+    var v = parseFloat(String(str===null||str===undefined?'':str).replace(/,/g,''));
+    return isNaN(v) ? NaN : v;
+  }
+  function moneyInput(attrs){
+    var base = {type:'text', inputmode:'decimal', autocomplete:'off'};
+    Object.keys(attrs||{}).forEach(function(k){ base[k]=attrs[k]; });
+    var inp = el('input', base);
+    inp.addEventListener('input', function(){
+      var pos = inp.selectionStart;
+      var digitsBefore = inp.value.slice(0,pos).replace(/[^0-9.]/g,'').length;
+      var formatted = fmtInputNumber(inp.value);
+      inp.value = formatted;
+      var newPos = 0, count = 0;
+      if(digitsBefore>0){
+        newPos = formatted.length;
+        for(var i=0;i<formatted.length;i++){
+          if(/[0-9.]/.test(formatted.charAt(i))) count++;
+          if(count>=digitsBefore){ newPos=i+1; break; }
+        }
+      }
+      try{ inp.setSelectionRange(newPos,newPos); }catch(e){}
+    });
+    return inp;
+  }
+
   function todayStrDMY(){ var d=new Date(); return d.getDate()+'/'+(d.getMonth()+1)+'/'+d.getFullYear(); }
   function sortKey(s){ if(!s) return '0000-00-00'; var p=s.split('/'); if(p.length===3) return p[2]+'-'+p[1].padStart(2,'0')+'-'+p[0].padStart(2,'0'); return s; }
   function el(tag, attrs, children){
@@ -524,7 +576,10 @@
     var res = await sb.auth.getSession();
     state.session = res.data.session;
     sb.auth.onAuthStateChange(function(_event, session){
+      var sameUser = state.session && session && state.session.user && session.user && state.session.user.id === session.user.id;
       state.session = session;
+      // silent token refreshes / tab-focus re-sign-ins must not redraw the screen (they wipe half-typed forms)
+      if(sameUser && state.loaded && (_event==='TOKEN_REFRESHED' || _event==='SIGNED_IN')) return;
       if(session && !state.loaded){ loadAppData(); } else { render(); }
     });
     if(state.session){ await loadAppData(); } else { render(); }
@@ -546,7 +601,7 @@
     state.subscribed = true;
     function onChange(){
       clearTimeout(realtimeDebounce);
-      realtimeDebounce = setTimeout(function(){ fetchAll().then(render); }, 400);
+      realtimeDebounce = setTimeout(function(){ fetchAll().then(function(){ if(!state.modal && !state.openNoteId && !state.openBuyerId) render(); }); }, 400);
     }
     sb.channel('mesken-live-changes')
       .on('postgres_changes', {event:'*', schema:'public', table:'projects'}, onChange)
@@ -649,7 +704,7 @@
      We keep ONE spare history entry whenever something is open (a project, a form, a drawer).
      Pressing back then closes the top-most layer instead of leaving the app. */
   var historyArmed = false;
-  function appIsAtRoot(){ return !state.modal && !state.openBuyerId && state.view === 'projects'; }
+  function appIsAtRoot(){ return !state.modal && !state.openBuyerId && !state.openNoteId && state.view === 'projects'; }
   function syncHistory(){
     var deep = !appIsAtRoot();
     if(deep && !historyArmed){
@@ -664,6 +719,7 @@
     historyArmed = false;
     if(state.modal){ state.modal = null; state.attachmentsList = null; state.pendingAttachmentFile = null; state.renameTargetId = null; }
     else if(state.openBuyerId){ state.openBuyerId = null; }
+    else if(state.openNoteId){ state.openNoteId = null; state.noteDraft = null; }
     else if(state.view === 'project'){ state.view = 'projects'; }
     render();
   });
@@ -984,6 +1040,7 @@
 
   function renderProjectDetail(){
     var proj = activeProject();
+    if(state.openNoteId){ var notePage = renderNotePage(proj); if(notePage) return notePage; }
     var frag = el('div');
     frag.appendChild(el('div',{class:'backlink', onclick:function(){ state.view='projects'; state.openBuyerId=null; render(); }},[t('allProjects')]));
     frag.appendChild(el('div',{class:'section-head'},[
@@ -1020,35 +1077,84 @@
     return frag;
   }
 
+  function noteTitleOf(n){
+    if(n.title && n.title.trim()) return n.title.trim();
+    var first = (n.note||'').trim().split('\n')[0];
+    return first ? first.slice(0,60) : t('untitledNote');
+  }
+
+  function openNote(id){
+    var proj = activeProject();
+    var existing = proj && (proj.notesList||[]).find(function(x){ return x.id===id; });
+    state.noteDraft = existing ? {title: existing.title||'', body: existing.note||''} : {title:'', body:''};
+    state.openNoteId = id;
+    render();
+    window.scrollTo(0,0);
+  }
+  function closeNote(){ state.openNoteId = null; state.noteDraft = null; render(); }
+
   function renderNotesTab(proj){
     var frag = el('div');
-    if(isAdmin()){
-      var ta = el('textarea',{placeholder:t('notesPlaceholder'), rows:3, style:'width:100%;margin-bottom:8px;'});
-      frag.appendChild(ta);
-      frag.appendChild(el('button',{class:'btn btn-primary', style:'margin-bottom:16px;', onclick:function(){
-        var v = ta.value.trim();
-        if(!v) return;
-        sb.from('project_notes').insert({project_id:proj.id, note:v}).then(function(res){
-          if(res.error){ alert(t('saveError')); return; } refreshAndRender();
-        });
-      }},[t('addNote')]));
-    }
+    var toolbar = el('div',{class:'toolbar'});
+    toolbar.appendChild(el('div',{class:'exp-toolbar-extra'},[t('notesNote')]));
+    toolbar.appendChild(el('div',{style:'flex:1'}));
+    if(isAdmin()) toolbar.appendChild(el('button',{class:'btn btn-primary', onclick:function(){ openNote('new'); }},[t('newNote')]));
+    frag.appendChild(toolbar);
+
     var list = proj.notesList || [];
     if(list.length===0){ frag.appendChild(el('div',{class:'empty'},[t('noNotesYet')])); return frag; }
     list.forEach(function(n){
-      var item = el('div',{class:'pay-item', style:'align-items:flex-start;'});
-      var left = el('div');
-      left.appendChild(el('div',{style:'white-space:pre-wrap;'},[n.note]));
-      left.appendChild(el('div',{class:'d'},[new Date(n.created_at).toLocaleString()]));
-      item.appendChild(left);
-      if(isAdmin()){
-        item.appendChild(el('span',{class:'close-x', title:'Delete', onclick:function(){
-          if(confirm(t('confirmDeleteNote'))){ sb.from('project_notes').delete().eq('id', n.id).then(function(){ refreshAndRender(); }); }
-        }},['×']));
-      }
-      frag.appendChild(item);
+      var card = el('div',{class:'note-card', onclick:function(){ openNote(n.id); }});
+      card.appendChild(el('div',{class:'note-title'},[noteTitleOf(n)]));
+      var preview = (n.note||'').trim();
+      if(preview) card.appendChild(el('div',{class:'note-preview'},[preview]));
+      card.appendChild(el('div',{class:'d'},[new Date(n.created_at).toLocaleString()]));
+      frag.appendChild(card);
     });
     return frag;
+  }
+
+  function renderNotePage(proj){
+    var isNew = state.openNoteId === 'new';
+    var existing = isNew ? null : (proj.notesList||[]).find(function(n){ return n.id===state.openNoteId; });
+    if(!isNew && !existing){ state.openNoteId=null; state.noteDraft=null; return null; }
+    if(!state.noteDraft) state.noteDraft = {title: existing?existing.title||'':'', body: existing?existing.note||'':''};
+    var draft = state.noteDraft;
+
+    var page = el('div',{class:'note-page'});
+    page.appendChild(el('div',{class:'backlink', onclick:closeNote},[t('backToNotes')]));
+
+    if(isAdmin()){
+      page.appendChild(el('input',{type:'text', class:'note-title-input', maxlength:'120', placeholder:t('noteTopicPh'), value:draft.title, oninput:function(e){ draft.title = e.target.value; }}));
+      page.appendChild(el('textarea',{class:'note-body-input', placeholder:t('noteBodyPh'), oninput:function(e){ draft.body = e.target.value; }},[draft.body]));
+      var actions = el('div',{class:'form-actions'});
+      actions.appendChild(el('button',{class:'btn btn-primary', disabled: state.formBusy?'true':null, onclick:function(){
+        if(state.formBusy) return;
+        var title = (draft.title||'').trim(), body = (draft.body||'').trim();
+        if(!title && !body){ alert(t('noteEmpty')); return; }
+        state.formBusy = true; render();
+        var req = isNew
+          ? sb.from('project_notes').insert({project_id: proj.id, title: title||null, note: body})
+          : sb.from('project_notes').update({title: title||null, note: body, updated_at: new Date().toISOString()}).eq('id', existing.id);
+        req.then(function(res){
+          state.formBusy = false;
+          if(res.error){ alert(t('saveError')+'\n\n('+res.error.message+')'); render(); return; }
+          state.openNoteId = null; state.noteDraft = null; refreshAndRender();
+        });
+      }},[t('saveNote')]));
+      if(!isNew){
+        actions.appendChild(el('button',{class:'btn btn-danger', onclick:function(){
+          if(!confirm(t('confirmDeleteNote'))) return;
+          sb.from('project_notes').delete().eq('id', existing.id).then(function(){ state.openNoteId=null; state.noteDraft=null; refreshAndRender(); });
+        }},[t('deleteNote')]));
+      }
+      page.appendChild(actions);
+    } else {
+      page.appendChild(el('h2',{class:'note-view-title'},[noteTitleOf(existing)]));
+      page.appendChild(el('div',{class:'note-view-body'},[existing.note||'']));
+    }
+    if(existing) page.appendChild(el('div',{class:'d', style:'margin-top:14px;'},[new Date(existing.created_at).toLocaleString()]));
+    return page;
   }
 
   function renderTrashTab(proj){
@@ -1244,7 +1350,7 @@
     if(isAdmin()){
       drawer.appendChild(el('div',{class:'section-title'},[t('recordPayment')]));
       drawer.appendChild(el('div',{class:'hint'},[t('monthlyHint')]));
-      var amtInput = el('input',{type:'number', value:String(MONTHLY_STANDARD)});
+      var amtInput = moneyInput({value:fmtInputNumber(MONTHLY_STANDARD)});
       var dateInput = el('input',{type:'text', placeholder:t('date'), value: todayStrDMY()});
       var noteInput = el('input',{type:'text', placeholder:t('note')});
       drawer.appendChild(el('div',{class:'field'},[el('label',{},[t('amount')]), amtInput]));
@@ -1252,7 +1358,7 @@
       drawer.appendChild(el('div',{class:'field'},[el('label',{},[t('note')]), noteInput]));
       drawer.appendChild(el('button',{class:'btn btn-primary', style:'width:100%;', disabled: state.formBusy?'true':null, onclick:function(){
         if(state.formBusy) return;
-        var amt = parseFloat(amtInput.value);
+        var amt = parseNum(amtInput.value);
         if(!amt||amt<=0){ alert(t('enterValidAmount')); return; }
         state.formBusy = true; render();
         sb.from('payments').insert({buyer_id:b.id, date:dateInput.value||todayStrDMY(), amount:amt, note:noteInput.value}).then(function(res){
@@ -1263,12 +1369,12 @@
       }},[t('addPayment')]));
 
       drawer.appendChild(el('div',{class:'section-title'},[t('brokerFee')]));
-      var bfAmt = el('input',{type:'number', placeholder:t('amount'), value: b.brokerFee||''});
+      var bfAmt = moneyInput({placeholder:t('amount'), value: b.brokerFee?fmtInputNumber(b.brokerFee):''});
       var bfStatus = el('select',{},[el('option',{value:''},[t('noBroker')]), el('option',{value:'Owed'},[t('brokerOwedB')]), el('option',{value:'Paid'},[t('brokerPaidB')])]);
       bfStatus.value = b.brokerFeeStatus || '';
       drawer.appendChild(el('div',{class:'grid2'},[el('div',{class:'field'},[el('label',{},[t('amount')]), bfAmt]), el('div',{class:'field'},[el('label',{},[t('status')]), bfStatus])]));
       drawer.appendChild(el('button',{class:'btn btn-ghost', style:'width:100%;', onclick:function(){
-        sb.from('buyers').update({broker_fee: bfAmt.value?parseFloat(bfAmt.value):null, broker_fee_status: bfStatus.value||null}).eq('id', b.id).then(function(res){
+        sb.from('buyers').update({broker_fee: bfAmt.value?parseNum(bfAmt.value):null, broker_fee_status: bfStatus.value||null}).eq('id', b.id).then(function(res){
           if(res.error){ alert(t('saveError')); return; } refreshAndRender();
         });
       }},[t('updateBroker')]));
@@ -1293,8 +1399,8 @@
     var ptypeOptions = [['House only',t('houseOnly')],['House & Shop',t('houseShop')],['Shop only',t('shopOnly')],['2 Houses only',t('twoHouses')],['1 House + 2 Shops',t('houseTwoShops')],['Other',t('other')]];
     var ptype = el('select',{},ptypeOptions.map(function(o){ return el('option',{value:o[0]},[o[1]]); }));
     var floor = el('input',{type:'text', placeholder:t('floor')});
-    var price = el('input',{type:'number', placeholder:t('totalPrice')});
-    var down = el('input',{type:'number', placeholder:t('downPayment')});
+    var price = moneyInput({placeholder:t('totalPrice')});
+    var down = moneyInput({placeholder:t('downPayment')});
     var date = el('input',{type:'text', placeholder:t('saleDate'), value: todayStrDMY()});
     var notes = el('textarea',{placeholder:t('notes'), rows:2});
     m.appendChild(el('div',{class:'field'},[el('label',{},[t('name')]), name]));
@@ -1307,11 +1413,11 @@
     actions.appendChild(el('button',{class:'btn btn-primary', disabled: state.formBusy?'true':null, onclick:function(){
       if(state.formBusy) return;
       if(!name.value.trim()){ alert(t('enterBuyerName')); return; }
-      var downAmt = parseFloat(down.value)||0;
+      var downAmt = parseNum(down.value)||0;
       state.formBusy = true; render();
       sb.from('buyers').insert({
         project_id: proj.id, name: name.value.trim(), property_type: ptype.value, floor: floor.value||null,
-        sale_date: date.value||todayStrDMY(), total_price: price.value?parseFloat(price.value):null, notes: notes.value||''
+        sale_date: date.value||todayStrDMY(), total_price: price.value?parseNum(price.value):null, notes: notes.value||''
       }).select().single().then(function(res){
         if(res.error || !res.data){ state.formBusy=false; alert(t('saveError')); render(); return; }
         var newId = res.data.id;
@@ -1334,7 +1440,7 @@
     var desc = el('input',{type:'text', placeholder:t('description')});
     var catList = type==='income'?REVENUE_CATEGORIES:COST_CATEGORIES;
     var cat = el('select',{},catList.map(function(o){ return el('option',{value:o},[o]); }));
-    var amt = el('input',{type:'number', placeholder:t('amount')});
+    var amt = moneyInput({placeholder:t('amount')});
     var date = el('input',{type:'text', placeholder:t('date'), value: todayStrDMY()});
     m.appendChild(el('div',{class:'field'},[el('label',{},[t('description')]), desc]));
     m.appendChild(el('div',{class:'grid2'},[el('div',{class:'field'},[el('label',{},[t('category')]), cat]), el('div',{class:'field'},[el('label',{},[t('amount')]), amt])]));
@@ -1343,7 +1449,7 @@
     actions.appendChild(el('button',{class:'btn btn-ghost', onclick:close},[t('cancel')]));
     actions.appendChild(el('button',{class:'btn btn-primary', disabled: state.formBusy?'true':null, onclick:function(){
       if(state.formBusy) return;
-      var a = parseFloat(amt.value);
+      var a = parseNum(amt.value);
       if(!desc.value.trim()||!a||a<=0){ alert(t('enterDescAmount')); return; }
       state.formBusy = true; render();
       sb.from('cost_revenue').insert({
