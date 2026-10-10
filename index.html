@@ -209,8 +209,8 @@
      1) FILL THESE IN after you create your Supabase project:
         Settings -> API -> Project URL, and the "anon public" key.
      ======================================================================= */
-  var SUPABASE_URL = 'https://bjwdakhbwsmgunorlewq.supabase.co';
-   var SUPABASE_ANON_KEY = 'sb_publishable_0vwna_W524FjQ9zT5C7phg_3mN7LLyK';
+  var SUPABASE_URL = 'YOUR_SUPABASE_URL_HERE';
+  var SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY_HERE';
 
   var MAX_PROJECTS = 10;
   var MONTHLY_STANDARD = 50000;
@@ -266,10 +266,11 @@
       roleAdmin:'Admin', roleViewer:'Viewer (view only)', viewOnlyNote:'You have view-only access \u2014 changes are made by an admin.',
       showMoney:'Show amounts', hideMoney:'Hide amounts', permanentNote:'This cannot be undone.',
       tabNotes:'Notes', tabTrash:'Trash', notesPlaceholder:'Write a note (e.g. contractor phone number, gate code, an emergency contact)…',
-      addNote:'Add Note', noNotesYet:'No notes yet.', confirmDeleteNote:'Delete this note?',
+      addNote:'Add Note', noNotesYet:'No notes yet.', confirmDeleteNote:'Delete this note? You can restore it from Trash.',
       trashEmpty:'Nothing in the trash right now.', restore:'Restore', deletedBuyers:'Deleted buyers',
       deletedEntries:'Deleted cost/revenue entries', deletedOn:'Deleted', deletedProjects:'Recently deleted projects',
       noDeletedProjects:'No deleted projects.', deleteForever:'Delete Forever', confirmDeleteForever:'Permanently delete this? There is no undo after this.',
+      confirmDeletePayment:'Remove this payment? You can restore it from Trash.', trashPayments:'Deleted payments', trashNotes:'Deleted notes',
       newNote:'+ New Note', notesNote:'Tap a topic to open it', noteTopicPh:'Topic (title)', noteBodyPh:'Write your note here…',
       saveNote:'Save Note', deleteNote:'Delete Note', backToNotes:'← Notes', untitledNote:'Untitled note', noteEmpty:'Write a topic or some text first.',
       attachments:'Attachments', attachmentsSub:'Receipts, screenshots, or PDFs for this entry.', uploadFile:'Upload File',
@@ -332,10 +333,11 @@
       roleAdmin:'አስተዳዳሪ', roleViewer:'ተመልካች (ማየት ብቻ)', viewOnlyNote:'እርስዎ ማየት ብቻ የሚችሉ መዳረሻ አለዎት — ለውጦች በአስተዳዳሪ ይደረጋሉ።',
       showMoney:'መጠኖችን አሳይ', hideMoney:'መጠኖችን ደብቅ', permanentNote:'ይህ ሊቀለበስ አይችልም።',
       tabNotes:'ማስታወሻዎች', tabTrash:'ቆሻሻ', notesPlaceholder:'ማስታወሻ ይጻፉ (ለምሳሌ የኮንትራክተር ስልክ፣ የበር ኮድ፣ የአደጋ ጊዜ ተጠሪ)…',
-      addNote:'ማስታወሻ ጨምር', noNotesYet:'እስካሁን ማስታወሻ የለም።', confirmDeleteNote:'ይህን ማስታወሻ ሰርዝ?',
+      addNote:'ማስታወሻ ጨምር', noNotesYet:'እስካሁን ማስታወሻ የለም።', confirmDeleteNote:'ይህን ማስታወሻ ሰርዝ? ከቆሻሻ መመለስ ይችላሉ።',
       trashEmpty:'በቆሻሻ ውስጥ ምንም የለም።', restore:'መልስ', deletedBuyers:'የተሰረዙ ገዢዎች',
       deletedEntries:'የተሰረዙ የወጪ/ገቢ ግቤቶች', deletedOn:'የተሰረዘበት', deletedProjects:'በቅርቡ የተሰረዙ ፕሮጀክቶች',
       noDeletedProjects:'የተሰረዘ ፕሮጀክት የለም።', deleteForever:'ለዘላለም ሰርዝ', confirmDeleteForever:'ይህን ለዘላለም መሰረዝ ይፈልጋሉ? ከዚህ በኋላ መመለስ አይቻልም።',
+      confirmDeletePayment:'ይህን ክፍያ ማስወገድ ይፈልጋሉ? ከቆሻሻ መመለስ ይችላሉ።', trashPayments:'የተሰረዙ ክፍያዎች', trashNotes:'የተሰረዙ ማስታወሻዎች',
       newNote:'+ አዲስ ማስታወሻ', notesNote:'ርዕስ ነክተው ይክፈቱ', noteTopicPh:'ርዕስ', noteBodyPh:'ማስታወሻዎን እዚህ ይጻፉ…',
       saveNote:'ማስታወሻ አስቀምጥ', deleteNote:'ማስታወሻ ሰርዝ', backToNotes:'← ማስታወሻዎች', untitledNote:'ርዕስ የለም', noteEmpty:'መጀመሪያ ርዕስ ወይም ጽሑፍ ይጻፉ።',
       attachments:'አባሪዎች', attachmentsSub:'ለዚህ ግቤት ደረሰኞች፣ ስክሪንሾቶች ወይም ፒዲኤፎች።', uploadFile:'ፋይል ስቀል',
@@ -357,7 +359,7 @@
     projects: [], openBuyerId: null, modal: null, renameTargetId: null, entryType: 'expense',
     loaded: false, session: null, role: null, roleLoaded: false, projectAccess: 'all',
     moneyHidden: true, authEmail: '', authPassword: '', authMsg: null, authBusy: false,
-    trash: {buyers:[], costRevenue:[]}, deletedProjects: [], deletedProjectsLoaded: false,
+    trash: {buyers:[], costRevenue:[], payments:[], notes:[]}, deletedProjects: [], deletedProjectsLoaded: false,
     attachmentsEntryId: null, attachmentsProjectId: null, attachmentsList: null, attachmentsUploading: false, pendingAttachmentFile: null,
     formBusy: false, openNoteId: null, noteDraft: null
   };
@@ -421,9 +423,9 @@
   async function fetchAll(){
     var pr = await sb.from('projects').select('*').is('deleted_at', null).order('id');
     var by = await sb.from('buyers').select('*').is('deleted_at', null).order('id');
-    var pa = await sb.from('payments').select('*').order('id');
+    var pa = await sb.from('payments').select('*').is('deleted_at', null).order('id');
     var cr = await sb.from('cost_revenue').select('*').is('deleted_at', null).order('id');
-    var nt = await sb.from('project_notes').select('*').order('created_at', {ascending:false});
+    var nt = await sb.from('project_notes').select('*').is('deleted_at', null).order('created_at', {ascending:false});
     if(pr.error || by.error || pa.error || cr.error){
       console.error(pr.error||by.error||pa.error||cr.error);
       return;
@@ -450,11 +452,19 @@
   }
 
   async function fetchTrash(proj){
-    var by = await sb.from('buyers').select('*').eq('project_id', proj.id).not('deleted_at','is',null).order('deleted_at',{ascending:false});
-    var cr = await sb.from('cost_revenue').select('*').eq('project_id', proj.id).not('deleted_at','is',null).order('deleted_at',{ascending:false});
+    var byRes = await sb.from('buyers').select('*').eq('project_id', proj.id);
+    var allBuyers = byRes.data || [];
+    var nameById = {}; allBuyers.forEach(function(b){ nameById[b.id] = b.name; });
+    var ids = allBuyers.map(function(b){ return b.id; });
+    var cr = await sb.from('cost_revenue').select('*').eq('project_id', proj.id).not('deleted_at','is',null);
+    var nt = await sb.from('project_notes').select('*').eq('project_id', proj.id).not('deleted_at','is',null);
+    var pa = ids.length ? await sb.from('payments').select('*').in('buyer_id', ids).not('deleted_at','is',null) : {data:[]};
+    function newest(a, b){ return new Date(b.deleted_at) - new Date(a.deleted_at); }
     state.trash = {
-      buyers: (by.data||[]).map(function(b){ return {id:b.id, name:b.name, propertyType:b.property_type, deleted_at:b.deleted_at}; }),
-      costRevenue: (cr.data||[]).map(function(x){ return {id:x.id, description:x.description, amount:x.amount, type: x.type==='Revenue'?'income':'expense', deleted_at:x.deleted_at}; })
+      buyers: allBuyers.filter(function(b){ return b.deleted_at; }).sort(newest).map(function(b){ return {id:b.id, name:b.name, propertyType:b.property_type, deleted_at:b.deleted_at}; }),
+      costRevenue: (cr.data||[]).slice().sort(newest).map(function(x){ return {id:x.id, description:x.description, amount:x.amount, type: x.type==='Revenue'?'income':'expense', deleted_at:x.deleted_at}; }),
+      payments: (pa.data||[]).slice().sort(newest).map(function(x){ return {id:x.id, buyerName:nameById[x.buyer_id]||'', amount:x.amount, date:x.date, deleted_at:x.deleted_at}; }),
+      notes: (nt.data||[]).slice().sort(newest).map(function(n){ return {id:n.id, title:n.title, note:n.note, deleted_at:n.deleted_at}; })
     };
   }
   async function fetchDeletedProjects(){
@@ -1145,7 +1155,10 @@
       if(!isNew){
         actions.appendChild(el('button',{class:'btn btn-danger', onclick:function(){
           if(!confirm(t('confirmDeleteNote'))) return;
-          sb.from('project_notes').delete().eq('id', existing.id).then(function(){ state.openNoteId=null; state.noteDraft=null; refreshAndRender(); });
+          sb.from('project_notes').update({deleted_at: new Date().toISOString()}).eq('id', existing.id).then(function(res){
+            if(res.error){ alert(t('saveError')+'\n\n('+res.error.message+')'); return; }
+            state.openNoteId=null; state.noteDraft=null; refreshAndRender();
+          });
         }},[t('deleteNote')]));
       }
       page.appendChild(actions);
@@ -1157,48 +1170,44 @@
     return page;
   }
 
+  function trashRow(label, sub, onRestore, onForever){
+    var row = el('div',{class:'pay-item'});
+    row.appendChild(el('div',{},[el('div',{},[label]), el('div',{class:'d'},[sub])]));
+    var btns = el('div',{style:'display:flex;gap:6px;flex:none;'});
+    btns.appendChild(el('button',{class:'btn btn-ghost btn-sm', onclick:onRestore},[t('restore')]));
+    btns.appendChild(el('button',{class:'btn btn-danger btn-sm', onclick:function(){ if(confirm(t('confirmDeleteForever'))) onForever(); }},[t('deleteForever')]));
+    row.appendChild(btns);
+    return row;
+  }
+
   function renderTrashTab(proj){
     var frag = el('div');
-    var trash = state.trash || {buyers:[], costRevenue:[]};
-    if((trash.buyers||[]).length===0 && (trash.costRevenue||[]).length===0){
+    var tr = state.trash || {};
+    var buyers = tr.buyers||[], entries = tr.costRevenue||[], pays = tr.payments||[], notes = tr.notes||[];
+    if(!buyers.length && !entries.length && !pays.length && !notes.length){
       frag.appendChild(el('div',{class:'empty'},[t('trashEmpty')]));
       return frag;
     }
-    if(trash.buyers.length){
+    var refresh = function(){ fetchTrash(proj).then(function(){ refreshAndRender(); }); };
+    function restore(table, id){ return function(){ sb.from(table).update({deleted_at:null}).eq('id', id).then(refresh); }; }
+    function forever(table, id){ return function(){ sb.from(table).delete().eq('id', id).then(refresh); }; }
+    function when(x){ return t('deletedOn')+': '+new Date(x.deleted_at).toLocaleString(); }
+
+    if(buyers.length){
       frag.appendChild(el('div',{class:'section-title'},[t('deletedBuyers')]));
-      trash.buyers.forEach(function(b){
-        var row = el('div',{class:'pay-item'});
-        row.appendChild(el('div',{},[el('div',{},[b.name+' — '+(b.propertyType||'')]), el('div',{class:'d'},[t('deletedOn')+': '+new Date(b.deleted_at).toLocaleString()])]));
-        var btns = el('div',{style:'display:flex;gap:6px;'});
-        btns.appendChild(el('button',{class:'btn btn-ghost btn-sm', onclick:function(){
-          sb.from('buyers').update({deleted_at:null}).eq('id', b.id).then(function(){ fetchTrash(proj).then(function(){ refreshAndRender(); }); });
-        }},[t('restore')]));
-        btns.appendChild(el('button',{class:'btn btn-danger btn-sm', onclick:function(){
-          if(confirm(t('confirmDeleteForever'))){
-            sb.from('buyers').delete().eq('id', b.id).then(function(){ fetchTrash(proj).then(function(){ refreshAndRender(); }); });
-          }
-        }},[t('deleteForever')]));
-        row.appendChild(btns);
-        frag.appendChild(row);
-      });
+      buyers.forEach(function(b){ frag.appendChild(trashRow(b.name+' — '+(b.propertyType||''), when(b), restore('buyers',b.id), forever('buyers',b.id))); });
     }
-    if(trash.costRevenue.length){
+    if(pays.length){
+      frag.appendChild(el('div',{class:'section-title'},[t('trashPayments')]));
+      pays.forEach(function(x){ frag.appendChild(trashRow(x.buyerName+' — '+fmt(x.amount)+' ETB', (x.date||'')+' · '+when(x), restore('payments',x.id), forever('payments',x.id))); });
+    }
+    if(entries.length){
       frag.appendChild(el('div',{class:'section-title'},[t('deletedEntries')]));
-      trash.costRevenue.forEach(function(x){
-        var row = el('div',{class:'pay-item'});
-        row.appendChild(el('div',{},[el('div',{},[x.description+' — '+fmt(x.amount)+' ETB']), el('div',{class:'d'},[t('deletedOn')+': '+new Date(x.deleted_at).toLocaleString()])]));
-        var btns2 = el('div',{style:'display:flex;gap:6px;'});
-        btns2.appendChild(el('button',{class:'btn btn-ghost btn-sm', onclick:function(){
-          sb.from('cost_revenue').update({deleted_at:null}).eq('id', x.id).then(function(){ fetchTrash(proj).then(function(){ refreshAndRender(); }); });
-        }},[t('restore')]));
-        btns2.appendChild(el('button',{class:'btn btn-danger btn-sm', onclick:function(){
-          if(confirm(t('confirmDeleteForever'))){
-            sb.from('cost_revenue').delete().eq('id', x.id).then(function(){ fetchTrash(proj).then(function(){ refreshAndRender(); }); });
-          }
-        }},[t('deleteForever')]));
-        row.appendChild(btns2);
-        frag.appendChild(row);
-      });
+      entries.forEach(function(x){ frag.appendChild(trashRow(x.description+' — '+fmt(x.amount)+' ETB', when(x), restore('cost_revenue',x.id), forever('cost_revenue',x.id))); });
+    }
+    if(notes.length){
+      frag.appendChild(el('div',{class:'section-title'},[t('trashNotes')]));
+      notes.forEach(function(n){ frag.appendChild(trashRow(noteTitleOf(n), when(n), restore('project_notes',n.id), forever('project_notes',n.id))); });
     }
     return frag;
   }
@@ -1340,7 +1349,11 @@
       var left = el('div'); left.appendChild(el('div',{},[fmt(p.amount)+' ETB'])); left.appendChild(el('div',{class:'d'},[p.date])); if(p.note) left.appendChild(el('div',{class:'n'},[p.note])); item.appendChild(left);
       if(isAdmin()){
         item.appendChild(el('span',{class:'close-x', style:'font-size:16px;', title:'Remove', onclick:function(){
-          sb.from('payments').delete().eq('id', p.id).then(function(){ refreshAndRender(); });
+          if(!confirm(t('confirmDeletePayment')+'\n\n'+fmt(p.amount)+' ETB — '+(p.date||''))) return;
+          sb.from('payments').update({deleted_at: new Date().toISOString()}).eq('id', p.id).then(function(res){
+            if(res.error){ alert(t('saveError')+'\n\n('+res.error.message+')'); return; }
+            refreshAndRender();
+          });
         }},['×']));
       }
       payList.appendChild(item);
