@@ -10,9 +10,12 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Mesken">
+<link rel="preconnect" href="https://bjwdakhbwsmgunorlewq.supabase.co" crossorigin>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Inter:wght@400;500;600;700&family=Noto+Sans+Ethiopic:wght@400;500;600;700&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Inter:wght@400;500;600;700&family=Noto+Sans+Ethiopic:wght@400;500;600;700&display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Inter:wght@400;500;600;700&family=Noto+Sans+Ethiopic:wght@400;500;600;700&display=swap"></noscript>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root{
@@ -196,6 +199,9 @@
   .note-body-input{width:100%; min-height:55vh; line-height:1.55; resize:vertical; margin-bottom:6px;}
   .note-view-title{margin:0 0 12px; overflow-wrap:anywhere;}
   .note-view-body{white-space:pre-wrap; line-height:1.6; overflow-wrap:anywhere; word-break:break-word;}
+  button, .btn, .tab, .toggle, .row, .note-card, .proj-card, .icon-btn, .close-x, .backlink, .add-proj-card{touch-action:manipulation;}
+  .toast{position:fixed; left:50%; bottom:calc(24px + env(safe-area-inset-bottom,0px)); transform:translateX(-50%); background:var(--accent); color:var(--accent-ink); padding:10px 18px; border-radius:999px; font-size:13px; font-weight:600; box-shadow:var(--shadow); z-index:100; transition:opacity .25s ease; pointer-events:none;}
+  .toast.hide{opacity:0;}
   ::selection{background:var(--accent-soft);}
 </style>
 </head>
@@ -271,6 +277,7 @@
       deletedEntries:'Deleted cost/revenue entries', deletedOn:'Deleted', deletedProjects:'Recently deleted projects',
       noDeletedProjects:'No deleted projects.', deleteForever:'Delete Forever', confirmDeleteForever:'Permanently delete this? There is no undo after this.',
       confirmDeletePayment:'Remove this payment? You can restore it from Trash.', trashPayments:'Deleted payments', trashNotes:'Deleted notes',
+      saved:'Saved ✓',
       newNote:'+ New Note', notesNote:'Tap a topic to open it', noteTopicPh:'Topic (title)', noteBodyPh:'Write your note here…',
       saveNote:'Save Note', deleteNote:'Delete Note', backToNotes:'← Notes', untitledNote:'Untitled note', noteEmpty:'Write a topic or some text first.',
       attachments:'Attachments', attachmentsSub:'Receipts, screenshots, or PDFs for this entry.', uploadFile:'Upload File',
@@ -338,6 +345,7 @@
       deletedEntries:'የተሰረዙ የወጪ/ገቢ ግቤቶች', deletedOn:'የተሰረዘበት', deletedProjects:'በቅርቡ የተሰረዙ ፕሮጀክቶች',
       noDeletedProjects:'የተሰረዘ ፕሮጀክት የለም።', deleteForever:'ለዘላለም ሰርዝ', confirmDeleteForever:'ይህን ለዘላለም መሰረዝ ይፈልጋሉ? ከዚህ በኋላ መመለስ አይቻልም።',
       confirmDeletePayment:'ይህን ክፍያ ማስወገድ ይፈልጋሉ? ከቆሻሻ መመለስ ይችላሉ።', trashPayments:'የተሰረዙ ክፍያዎች', trashNotes:'የተሰረዙ ማስታወሻዎች',
+      saved:'ተቀምጧል ✓',
       newNote:'+ አዲስ ማስታወሻ', notesNote:'ርዕስ ነክተው ይክፈቱ', noteTopicPh:'ርዕስ', noteBodyPh:'ማስታወሻዎን እዚህ ይጻፉ…',
       saveNote:'ማስታወሻ አስቀምጥ', deleteNote:'ማስታወሻ ሰርዝ', backToNotes:'← ማስታወሻዎች', untitledNote:'ርዕስ የለም', noteEmpty:'መጀመሪያ ርዕስ ወይም ጽሑፍ ይጻፉ።',
       attachments:'አባሪዎች', attachmentsSub:'ለዚህ ግቤት ደረሰኞች፣ ስክሪንሾቶች ወይም ፒዲኤፎች።', uploadFile:'ፋይል ስቀል',
@@ -420,17 +428,35 @@
   }
 
   /* ---------------- data layer (Supabase) ---------------- */
+  // Supabase returns at most 1,000 rows per request, so read in pages — otherwise totals silently go wrong once a table passes 1,000 rows.
+  async function fetchRows(build){
+    var out = [], from = 0, size = 1000;
+    for(;;){
+      var res = await build().range(from, from+size-1);
+      if(res.error) return {data:null, error:res.error};
+      var rows = res.data || [];
+      out = out.concat(rows);
+      if(rows.length < size) break;
+      from += size;
+    }
+    return {data:out, error:null};
+  }
+
+  // Loads all 5 tables AT THE SAME TIME (one round-trip of waiting instead of five). Returns true if anything changed.
   async function fetchAll(){
-    var pr = await sb.from('projects').select('*').is('deleted_at', null).order('id');
-    var by = await sb.from('buyers').select('*').is('deleted_at', null).order('id');
-    var pa = await sb.from('payments').select('*').is('deleted_at', null).order('id');
-    var cr = await sb.from('cost_revenue').select('*').is('deleted_at', null).order('id');
-    var nt = await sb.from('project_notes').select('*').is('deleted_at', null).order('created_at', {ascending:false});
+    var r = await Promise.all([
+      fetchRows(function(){ return sb.from('projects').select('*').is('deleted_at', null).order('id'); }),
+      fetchRows(function(){ return sb.from('buyers').select('*').is('deleted_at', null).order('id'); }),
+      fetchRows(function(){ return sb.from('payments').select('*').is('deleted_at', null).order('id'); }),
+      fetchRows(function(){ return sb.from('cost_revenue').select('*').is('deleted_at', null).order('id'); }),
+      fetchRows(function(){ return sb.from('project_notes').select('*').is('deleted_at', null).order('created_at', {ascending:false}).order('id'); })
+    ]);
+    var pr = r[0], by = r[1], pa = r[2], cr = r[3], nt = r[4];
     if(pr.error || by.error || pa.error || cr.error){
       console.error(pr.error||by.error||pa.error||cr.error);
-      return;
+      return false;
     }
-    state.projects = pr.data.map(function(p){
+    var next = pr.data.map(function(p){
       return {
         id: p.id, name: p.name,
         buyers: by.data.filter(function(b){ return b.project_id===p.id; }).map(function(b){
@@ -449,6 +475,38 @@
         notesList: (nt.data||[]).filter(function(n){ return n.project_id===p.id; })
       };
     });
+    var sig = JSON.stringify(next);
+    var changed = (sig !== state._sig);
+    state._sig = sig;
+    state.projects = next;
+    return changed;
+  }
+
+  // One shared loader. reloadData() always returns data read AFTER the moment it was called.
+  // If a load is already running, we queue exactly ONE follow-up load (shared by everyone waiting) — never a pile-up,
+  // and a save never has to wait for a background refresh that was queued after it.
+  var inFlight = null, queued = null;
+  function runFetch(){
+    var p = fetchAll().then(function(c){ if(inFlight===p) inFlight = null; return c; },
+                            function(e){ if(inFlight===p) inFlight = null; throw e; });
+    inFlight = p;
+    return p;
+  }
+  function reloadData(){
+    if(!inFlight) return runFetch();
+    if(!queued){
+      queued = inFlight.catch(function(){}).then(function(){ queued = null; return runFetch(); });
+    }
+    return queued;
+  }
+
+  // Small "Saved ✓" confirmation so a tap always visibly does something.
+  function toast(msg){
+    var host = document.getElementById('app') || document.body;
+    var old = document.getElementById('mesken-toast'); if(old) old.remove();
+    var d = document.createElement('div'); d.id = 'mesken-toast'; d.className = 'toast'; d.textContent = msg;
+    host.appendChild(d);
+    setTimeout(function(){ d.classList.add('hide'); setTimeout(function(){ if(d.parentNode) d.remove(); }, 260); }, 1400);
   }
 
   async function fetchTrash(proj){
@@ -559,7 +617,7 @@
 
   function activeProject(){ return state.projects.find(function(p){ return p.id===state.activeProjectId; }); }
 
-  async function refreshAndRender(){ await fetchAll(); render(); }
+  async function refreshAndRender(){ try{ await reloadData(); }catch(e){} render(); toast(t('saved')); }
 
   /* ---------------- auth ---------------- */
   function loadPrefs(){
@@ -596,9 +654,8 @@
   }
 
   async function loadAppData(){
-    await fetchRole();
+    await Promise.all([fetchRole(), reloadData()]);
     if(!state.role){ render(); return; }
-    await fetchAll();
     state.loaded = true;
     render();
     setupRealtime();
@@ -611,7 +668,7 @@
     state.subscribed = true;
     function onChange(){
       clearTimeout(realtimeDebounce);
-      realtimeDebounce = setTimeout(function(){ fetchAll().then(function(){ if(!state.modal && !state.openNoteId && !state.openBuyerId) render(); }); }, 400);
+      realtimeDebounce = setTimeout(function(){ reloadData().then(function(changed){ if(changed && !state.modal && !state.openNoteId && !state.openBuyerId) render(); }); }, 250);
     }
     sb.channel('mesken-live-changes')
       .on('postgres_changes', {event:'*', schema:'public', table:'projects'}, onChange)
@@ -641,7 +698,27 @@
     XLSX.utils.book_append_sheet(wb2, ws, name);
   }
 
+  var xlsxPromise = null;
+  function ensureXLSX(){
+    if(typeof XLSX !== 'undefined') return Promise.resolve();
+    if(xlsxPromise) return xlsxPromise;
+    xlsxPromise = new Promise(function(resolve, reject){
+      var sc = document.createElement('script');
+      sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+      sc.onload = resolve;
+      sc.onerror = function(){ xlsxPromise = null; reject(new Error('load failed')); };
+      document.head.appendChild(sc);
+    });
+    return xlsxPromise;
+  }
   function exportProjectToExcel(proj){
+    ensureXLSX().then(function(){ doExportProject(proj); }).catch(function(){ alert('Excel export library did not load — check your internet connection.'); });
+  }
+  function exportPortfolioToExcel(){
+    ensureXLSX().then(function(){ doExportPortfolio(); }).catch(function(){ alert('Excel export library did not load — check your internet connection.'); });
+  }
+
+  function doExportProject(proj){
     if(typeof XLSX==='undefined'){ alert('Excel export library did not load.'); return; }
     var wb2 = XLSX.utils.book_new();
     var buyerRows = proj.buyers.map(function(b){ return {'No.':b.id,'Name':b.name,'Property Type':b.propertyType,'Floor':b.floor,'Sale Date':b.date,'Total Price (ETB)':b.totalPrice,'Total Paid (ETB)':b.totalPaid,'Remaining (ETB)':b.remainingBalance,'Broker Fee (ETB)':b.brokerFee,'Broker Status':b.brokerFeeStatus,'Notes':b.notes}; });
@@ -654,7 +731,7 @@
     addSheet(wb2, revRows, 'Revenue');
     XLSX.writeFile(wb2, proj.name.replace(/[^\w\-]+/g,'_')+'.xlsx');
   }
-  function exportPortfolioToExcel(){
+  function doExportPortfolio(){
     if(typeof XLSX==='undefined'){ alert('Excel export library did not load.'); return; }
     var wb2 = XLSX.utils.book_new();
     var overview = state.projects.map(function(p){
@@ -1025,7 +1102,7 @@
 
     if(isAdmin()){
       if(!state.deletedProjectsLoaded){
-        fetchDeletedProjects().then(function(){ state.deletedProjectsLoaded=true; render(); });
+        fetchDeletedProjects().then(function(){ state.deletedProjectsLoaded=true; if(state.deletedProjects.length) render(); });
       } else if(state.deletedProjects.length){
         frag.appendChild(el('div',{class:'section-title'},[t('deletedProjects')]));
         state.deletedProjects.forEach(function(dp){
@@ -1212,15 +1289,8 @@
     return frag;
   }
 
-  function renderBuyersTab(proj){
-    var frag = el('div');
-    var toolbar = el('div',{class:'toolbar'});
-    toolbar.appendChild(el('input',{class:'search', placeholder:t('searchPh'), value: state.search, oninput:function(e){ state.search=e.target.value; render(); }}));
-    if(isAdmin()) toolbar.appendChild(el('button',{class:'btn btn-primary', onclick:function(){ state.modal='addBuyer'; render(); }},[t('addBuyer')]));
-    frag.appendChild(toolbar);
-    frag.appendChild(el('div',{class:'colhead'},[el('div',{},[t('colBuyer')]),el('div',{},[t('colProperty')]),el('div',{},[t('colPrice')]),el('div',{},[t('colPaid')]),el('div',{},[t('colRemaining')]),el('div',{},[''])]));
-
-    var list = el('div',{class:'list'});
+  function fillBuyerList(list, proj){
+    list.innerHTML = '';
     var q = state.search.trim().toLowerCase();
     var buyers = proj.buyers.filter(function(b){ if(!q) return true; return (b.name||'').toLowerCase().indexOf(q)>-1 || (b.propertyType||'').toLowerCase().indexOf(q)>-1; }).slice().sort(function(a,b){ return a.id-b.id; });
     if(buyers.length===0){ list.appendChild(el('div',{class:'empty'},[t('noBuyersMatch')])); }
@@ -1240,6 +1310,17 @@
       row.appendChild(el('span',{class:'badge '+badgeCls},[badgeTxt]));
       list.appendChild(row);
     });
+  }
+
+  function renderBuyersTab(proj){
+    var frag = el('div');
+    var toolbar = el('div',{class:'toolbar'});
+    var list = el('div',{class:'list'});
+    toolbar.appendChild(el('input',{class:'search', placeholder:t('searchPh'), value: state.search, oninput:function(e){ state.search=e.target.value; fillBuyerList(list, proj); }}));
+    if(isAdmin()) toolbar.appendChild(el('button',{class:'btn btn-primary', onclick:function(){ state.modal='addBuyer'; render(); }},[t('addBuyer')]));
+    frag.appendChild(toolbar);
+    frag.appendChild(el('div',{class:'colhead'},[el('div',{},[t('colBuyer')]),el('div',{},[t('colProperty')]),el('div',{},[t('colPrice')]),el('div',{},[t('colPaid')]),el('div',{},[t('colRemaining')]),el('div',{},[''])]));
+    fillBuyerList(list, proj);
     frag.appendChild(list);
     return frag;
   }
