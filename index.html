@@ -215,9 +215,9 @@
      1) FILL THESE IN after you create your Supabase project:
         Settings -> API -> Project URL, and the "anon public" key.
      ======================================================================= */
-  var SUPABASE_URL = 'https://bjwdakhbwsmgunorlewq.supabase.co';
+   var SUPABASE_URL = 'https://bjwdakhbwsmgunorlewq.supabase.co';
    var SUPABASE_ANON_KEY = 'sb_publishable_0vwna_W524FjQ9zT5C7phg_3mN7LLyK';
-   
+
   var MAX_PROJECTS = 10;
   var MONTHLY_STANDARD = 50000;
   var CONFIGURED = SUPABASE_URL.indexOf('YOUR_SUPABASE') === -1 && SUPABASE_ANON_KEY.indexOf('YOUR_SUPABASE') === -1;
@@ -229,7 +229,7 @@
       tagline:'Live payment tracking & site cost summary — your own database',
       light:'Light', dark:'Dark', signOut:'Sign out',
       allProjects:'← All projects', projects:'Projects', newProject:'+ New Project', used:'of '+MAX_PROJECTS+' used',
-      tabBuyers:'Buyers', tabThisMonth:'This Month', tmPaid:'Paid', tmPartly:'Partly paid', tmNotPaid:'Not paid', tmPaidThisMonth:'paid this month', tmNone:'Nobody in this group.', tmTotal:'buyers still paying', tabTracker:'Payment Tracker', tabCosts:'Costs', tabRevenue:'Revenue',
+      tabBuyers:'Buyers', tabThisMonth:'This Month', tmPaid:'Paid', tmPartly:'Partly paid', tmNotPaid:'Not paid', tmPaidThisMonth:'paid this month', tmNone:'Nobody in this group.', tmTotal:'buyers', tabTracker:'Payment Tracker', tabCosts:'Costs', tabRevenue:'Revenue',
       addBuyer:'+ Add Buyer', addCost:'+ Add Cost', addRevenue:'+ Add Revenue',
       searchPh:'Search buyer name or property type…',
       colBuyer:'Buyer', colProperty:'Property', colPrice:'Total price', colPaid:'Paid', colRemaining:'Remaining',
@@ -1328,22 +1328,39 @@
 
   function renderThisMonthTab(proj){
     var frag = el('div');
+    function mk(p){ return sortKey(p.date).slice(0, 7); }
+    // first month each buyer paid anything; earliest of all = how far back we can go
+    var earliest = '';
+    proj.buyers.forEach(function(b){
+      b.payments.forEach(function(p){ var k = mk(p); if(k > '2000' && (earliest === '' || k < earliest)) earliest = k; });
+    });
     var now = new Date();
     var d = new Date(now.getFullYear(), now.getMonth() + state.monthShift, 1);
     var key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+    var atStart = earliest !== '' && key <= earliest;
     var label = d.toLocaleString(state.lang === 'am' ? 'am-ET' : 'en-US', {month:'long', year:'numeric'});
     var nav = el('div', {style:'display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:10px;'});
-    nav.appendChild(el('button', {class:'btn btn-ghost btn-sm', onclick:function(){ state.monthShift--; render(); }}, ['←']));
+    nav.appendChild(el('button', {class:'btn btn-ghost btn-sm', disabled: atStart ? 'true' : null, onclick:function(){ state.monthShift--; render(); }}, ['←']));
     nav.appendChild(el('div', {style:'font-weight:700;'}, [label]));
     nav.appendChild(el('button', {class:'btn btn-ghost btn-sm', disabled: state.monthShift >= 0 ? 'true' : null, onclick:function(){ state.monthShift++; render(); }}, ['→']));
     frag.appendChild(nav);
     var groups = {paid:[], partly:[], none:[]};
     proj.buyers.forEach(function(b){
-      if(typeof b.remainingBalance === 'number' && b.remainingBalance <= 0) return;
-      var sum = 0;
-      b.payments.forEach(function(p){ if(sortKey(p.date).slice(0, 7) === key) sum += Number(p.amount) || 0; });
-      var g = sum >= MONTHLY_STANDARD ? 'paid' : (sum > 0 ? 'partly' : 'none');
-      groups[g].push({b:b, sum:sum});
+      var start = '';
+      b.payments.forEach(function(p){ var k = mk(p); if(start === '' || k < start) start = k; });
+      // a buyer with no payments yet only shows in the current month
+      if(start === '' ? state.monthShift !== 0 : key < start) return;
+      var monthSum = 0, paidThrough = 0;
+      b.payments.forEach(function(p){
+        var k = mk(p), a = Number(p.amount) || 0;
+        if(k === key) monthSum += a;
+        if(k <= key) paidThrough += a;
+      });
+      var priceKnown = (b.totalPrice !== null && b.totalPrice !== undefined && !isNaN(Number(b.totalPrice)));
+      var finishedByThen = priceKnown && (Number(b.totalPrice) - paidThrough) <= 0;
+      if(finishedByThen && monthSum === 0) return; // already fully paid before this month
+      var g = (monthSum >= MONTHLY_STANDARD || finishedByThen) ? 'paid' : (monthSum > 0 ? 'partly' : 'none');
+      groups[g].push({b:b, sum:monthSum});
     });
     var total = groups.paid.length + groups.partly.length + groups.none.length;
     frag.appendChild(el('div', {class:'exp-toolbar-extra', style:'margin-bottom:8px;'}, [total + ' ' + t('tmTotal')]));
