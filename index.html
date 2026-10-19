@@ -215,9 +215,9 @@
      1) FILL THESE IN after you create your Supabase project:
         Settings -> API -> Project URL, and the "anon public" key.
      ======================================================================= */
-   var SUPABASE_URL = 'https://bjwdakhbwsmgunorlewq.supabase.co';
+  
+ var SUPABASE_URL = 'https://bjwdakhbwsmgunorlewq.supabase.co';
    var SUPABASE_ANON_KEY = 'sb_publishable_0vwna_W524FjQ9zT5C7phg_3mN7LLyK';
-
   var MAX_PROJECTS = 10;
   var MONTHLY_STANDARD = 50000;
   var CONFIGURED = SUPABASE_URL.indexOf('YOUR_SUPABASE') === -1 && SUPABASE_ANON_KEY.indexOf('YOUR_SUPABASE') === -1;
@@ -683,8 +683,7 @@
   }
 
   /* ---------------- Excel export (same as before, from fetched data) ---------------- */
-  function autoWidth(ws, rows){
-      function wideLen(v){ var str = String(v), n = 0; for(var i=0;i<str.length;i++){ n += (str.charCodeAt(i) >= 0x1200 ? 2 : 1); } return n; }
+  function wideLen(v){ var str = String(v), n = 0; for(var i=0;i<str.length;i++){ n += (str.charCodeAt(i) >= 0x1200 ? 2 : 1); } return n; }
   function autoWidth(ws, rows){
     if(!rows || !rows.length) return;
     var keys = Object.keys(rows[0]);
@@ -706,12 +705,6 @@
         }
       }
     }
-    XLSX.utils.book_append_sheet(wb2, ws, name);
-  }
-  }
-  function addSheet(wb2, rows, name){
-    var ws = XLSX.utils.json_to_sheet(rows);
-    autoWidth(ws, rows);
     XLSX.utils.book_append_sheet(wb2, ws, name);
   }
 
@@ -1354,7 +1347,7 @@
     var now = new Date();
     var d = new Date(now.getFullYear(), now.getMonth() + state.monthShift, 1);
     var key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
-   var atStart = key <= '2026-10';
+    var atStart = key <= '2026-10';
     var label = d.toLocaleString(state.lang === 'am' ? 'am-ET' : 'en-US', {month:'long', year:'numeric'});
     var nav = el('div', {style:'display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:10px;'});
     nav.appendChild(el('button', {class:'btn btn-ghost btn-sm', disabled: atStart ? 'true' : null, onclick:function(){ state.monthShift--; render(); }}, ['←']));
