@@ -704,7 +704,7 @@
     if(xlsxPromise) return xlsxPromise;
     xlsxPromise = new Promise(function(resolve, reject){
       var sc = document.createElement('script');
-      sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+      sc.src = 'https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js';
       sc.onload = resolve;
       sc.onerror = function(){ xlsxPromise = null; reject(new Error('load failed')); };
       document.head.appendChild(sc);
