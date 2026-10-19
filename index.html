@@ -215,9 +215,9 @@
      1) FILL THESE IN after you create your Supabase project:
         Settings -> API -> Project URL, and the "anon public" key.
      ======================================================================= */
-   var SUPABASE_URL = 'https://bjwdakhbwsmgunorlewq.supabase.co';
+  var SUPABASE_URL = 'https://bjwdakhbwsmgunorlewq.supabase.co';
    var SUPABASE_ANON_KEY = 'sb_publishable_0vwna_W524FjQ9zT5C7phg_3mN7LLyK';
-
+   
   var MAX_PROJECTS = 10;
   var MONTHLY_STANDARD = 50000;
   var CONFIGURED = SUPABASE_URL.indexOf('YOUR_SUPABASE') === -1 && SUPABASE_ANON_KEY.indexOf('YOUR_SUPABASE') === -1;
@@ -229,7 +229,7 @@
       tagline:'Live payment tracking & site cost summary — your own database',
       light:'Light', dark:'Dark', signOut:'Sign out',
       allProjects:'← All projects', projects:'Projects', newProject:'+ New Project', used:'of '+MAX_PROJECTS+' used',
-      tabBuyers:'Buyers', tabTracker:'Payment Tracker', tabCosts:'Costs', tabRevenue:'Revenue',
+      tabBuyers:'Buyers', tabThisMonth:'This Month', tmPaid:'Paid', tmPartly:'Partly paid', tmNotPaid:'Not paid', tmPaidThisMonth:'paid this month', tmNone:'Nobody in this group.', tmTotal:'buyers still paying', tabTracker:'Payment Tracker', tabCosts:'Costs', tabRevenue:'Revenue',
       addBuyer:'+ Add Buyer', addCost:'+ Add Cost', addRevenue:'+ Add Revenue',
       searchPh:'Search buyer name or property type…',
       colBuyer:'Buyer', colProperty:'Property', colPrice:'Total price', colPaid:'Paid', colRemaining:'Remaining',
@@ -297,7 +297,7 @@
       tagline:'ቀጥታ የክፍያ መከታተያ እና የሳይት ወጪ ማጠቃለያ — የራስዎ ዳታቤዝ',
       light:'ብሩህ', dark:'ጨለማ',
       allProjects:'← ሁሉም ፕሮጀክቶች', projects:'ፕሮጀክቶች', newProject:'+ አዲስ ፕሮጀክት', used:'ከ'+MAX_PROJECTS+' ውስጥ ጥቅም ላይ',
-      tabBuyers:'ገዢዎች', tabTracker:'የክፍያ መከታተያ', tabCosts:'ወጪዎች', tabRevenue:'ገቢ',
+      tabBuyers:'ገዢዎች', tabThisMonth:'ይህ ወር', tmPaid:'ከፍለዋል', tmPartly:'በከፊል ከፍለዋል', tmNotPaid:'አልከፈሉም', tmPaidThisMonth:'በዚህ ወር ከፍለዋል', tmNone:'በዚህ ቡድን ማንም የለም።', tmTotal:'ክፍያ የሚቀጥሉ ገዢዎች', tabTracker:'የክፍያ መከታተያ', tabCosts:'ወጪዎች', tabRevenue:'ገቢ',
       addBuyer:'+ ገዢ ጨምር', addCost:'+ ወጪ ጨምር', addRevenue:'+ ገቢ ጨምር',
       searchPh:'የገዢ ስም ወይም የንብረት አይነት ይፈልጉ…',
       colBuyer:'ገዢ', colProperty:'ንብረት', colPrice:'ጠቅላላ ዋጋ', colPaid:'የተከፈለ', colRemaining:'ቀሪ',
@@ -369,7 +369,7 @@
     moneyHidden: true, authEmail: '', authPassword: '', authMsg: null, authBusy: false,
     trash: {buyers:[], costRevenue:[], payments:[], notes:[]}, deletedProjects: [], deletedProjectsLoaded: false,
     attachmentsEntryId: null, attachmentsProjectId: null, attachmentsList: null, attachmentsUploading: false, pendingAttachmentFile: null,
-    formBusy: false, openNoteId: null, noteDraft: null
+    formBusy: false, openNoteId: null, noteDraft: null, monthShift: 0
   };
   function isAdmin(){ return state.role === 'admin'; }
 
@@ -1145,7 +1145,7 @@
     frag.appendChild(cards);
 
     var tabs = el('div',{class:'tabs'});
-    var tabList = [['buyers',t('tabBuyers')],['tracker',t('tabTracker')],['costs',t('tabCosts')],['revenue',t('tabRevenue')],['notes',t('tabNotes')]];
+    var tabList = [['buyers',t('tabBuyers')],['thismonth',t('tabThisMonth')],['tracker',t('tabTracker')],['costs',t('tabCosts')],['revenue',t('tabRevenue')],['notes',t('tabNotes')]];
     if(isAdmin()) tabList.push(['trash',t('tabTrash')]);
     tabList.forEach(function(tp){
       tabs.appendChild(el('div',{class:'tab'+(state.tab===tp[0]?' active':''), onclick:function(){
@@ -1156,6 +1156,7 @@
     frag.appendChild(tabs);
 
     if(state.tab==='buyers') frag.appendChild(renderBuyersTab(proj));
+    else if(state.tab==='thismonth') frag.appendChild(renderThisMonthTab(proj));
     else if(state.tab==='tracker') frag.appendChild(renderTrackerTab(proj));
     else if(state.tab==='costs') frag.appendChild(renderEntriesTab(proj,'expense'));
     else if(state.tab==='revenue') frag.appendChild(renderEntriesTab(proj,'income'));
@@ -1322,6 +1323,46 @@
     frag.appendChild(el('div',{class:'colhead'},[el('div',{},[t('colBuyer')]),el('div',{},[t('colProperty')]),el('div',{},[t('colPrice')]),el('div',{},[t('colPaid')]),el('div',{},[t('colRemaining')]),el('div',{},[''])]));
     fillBuyerList(list, proj);
     frag.appendChild(list);
+    return frag;
+  }
+
+  function renderThisMonthTab(proj){
+    var frag = el('div');
+    var now = new Date();
+    var d = new Date(now.getFullYear(), now.getMonth() + state.monthShift, 1);
+    var key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+    var label = d.toLocaleString(state.lang === 'am' ? 'am-ET' : 'en-US', {month:'long', year:'numeric'});
+    var nav = el('div', {style:'display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:10px;'});
+    nav.appendChild(el('button', {class:'btn btn-ghost btn-sm', onclick:function(){ state.monthShift--; render(); }}, ['←']));
+    nav.appendChild(el('div', {style:'font-weight:700;'}, [label]));
+    nav.appendChild(el('button', {class:'btn btn-ghost btn-sm', disabled: state.monthShift >= 0 ? 'true' : null, onclick:function(){ state.monthShift++; render(); }}, ['→']));
+    frag.appendChild(nav);
+    var groups = {paid:[], partly:[], none:[]};
+    proj.buyers.forEach(function(b){
+      if(typeof b.remainingBalance === 'number' && b.remainingBalance <= 0) return;
+      var sum = 0;
+      b.payments.forEach(function(p){ if(sortKey(p.date).slice(0, 7) === key) sum += Number(p.amount) || 0; });
+      var g = sum >= MONTHLY_STANDARD ? 'paid' : (sum > 0 ? 'partly' : 'none');
+      groups[g].push({b:b, sum:sum});
+    });
+    var total = groups.paid.length + groups.partly.length + groups.none.length;
+    frag.appendChild(el('div', {class:'exp-toolbar-extra', style:'margin-bottom:8px;'}, [total + ' ' + t('tmTotal')]));
+    [['none','tmNotPaid','none'], ['partly','tmPartly','owed'], ['paid','tmPaid','paid']].forEach(function(g){
+      var list = groups[g[0]];
+      frag.appendChild(el('div', {style:'margin:14px 0 6px;'}, [el('span', {class:'badge ' + g[2]}, [t(g[1]) + ' · ' + list.length])]));
+      if(list.length === 0){ frag.appendChild(el('div', {class:'exp-toolbar-extra'}, [t('tmNone')])); return; }
+      list.forEach(function(x){
+        var row = el('div', {class:'tr-row'});
+        var left = el('div', {class:'tr-left'});
+        left.appendChild(el('div', {class:'name'}, [x.b.name]));
+        if(x.sum > 0) left.appendChild(el('div', {class:'meta'}, [fmt(x.sum) + ' ETB ' + t('tmPaidThisMonth')]));
+        row.appendChild(left);
+        var right = el('div', {class:'tr-right'});
+        right.appendChild(el('button', {class:'btn btn-ghost btn-sm', onclick:function(){ state.openBuyerId = x.b.id; render(); }}, [t('viewDetails')]));
+        row.appendChild(right);
+        frag.appendChild(row);
+      });
+    });
     return frag;
   }
 
