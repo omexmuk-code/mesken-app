@@ -1337,7 +1337,7 @@
     var now = new Date();
     var d = new Date(now.getFullYear(), now.getMonth() + state.monthShift, 1);
     var key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
-    var atStart = earliest !== '' && key <= earliest;
+    var atStart = key <= '2026-10';;
     var label = d.toLocaleString(state.lang === 'am' ? 'am-ET' : 'en-US', {month:'long', year:'numeric'});
     var nav = el('div', {style:'display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:10px;'});
     nav.appendChild(el('button', {class:'btn btn-ghost btn-sm', disabled: atStart ? 'true' : null, onclick:function(){ state.monthShift--; render(); }}, ['←']));
